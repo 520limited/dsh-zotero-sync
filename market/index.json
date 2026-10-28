@@ -1,0 +1,84 @@
+{
+  "format": 1,
+  "title": {
+    "en": "520limited plugins",
+    "zh": "520limited 插件"
+  },
+  "description": {
+    "en": "Personal index of DeepSeek Harness plugins by 520limited.",
+    "zh": "520limited 的 DeepSeek Harness 插件索引。"
+  },
+  "metadata": {
+    "categories": {
+      "productivity": {
+        "title": {
+          "en": "Productivity",
+          "zh": "效率"
+        }
+      }
+    },
+    "labels": {
+      "zotero": {
+        "title": {
+          "en": "Zotero",
+          "zh": "Zotero"
+        }
+      },
+      "literature-notes": {
+        "title": {
+          "en": "Literature & notes",
+          "zh": "文献与笔记"
+        }
+      }
+    }
+  },
+  "plugins": [
+    {
+      "name": "dsh-zotero-sync",
+      "title": {
+        "en": "Zotero Sync",
+        "zh": "Zotero 同步"
+      },
+      "description": {
+        "en": "Uploads the documents this conversation produced — Markdown notes, PDFs, Office files — into your local Zotero library through Zotero's built-in connector on 127.0.0.1:23119. No API key and nothing to install inside Zotero. Adds an upload row beside each turn's deliverables, a composer chip, a /zotero command, and a zotero_sync tool. Choose the destination collection, restrict the scope to Markdown only, and unchanged files are skipped instead of duplicated.",
+        "zh": "把对话中产出的文档（Markdown 笔记、PDF、Office 文件）上传到本机 Zotero 文库，走 Zotero 自带的本地服务 127.0.0.1:23119，无需 API Key，也不用在 Zotero 里装任何东西。在每回合交付物旁加一行上传入口，另有输入框快捷按钮、/zotero 指令与 zotero_sync 工具；可选择目标集合、把范围收窄到只要 Markdown，内容未变化的文件自动跳过而不重复建条目。"
+      },
+      "icon": "./icon.svg",
+      "author": "Ycx66",
+      "homepage": "https://github.com/520limited/dsh-zotero-sync#readme",
+      "repository": {
+        "url": "https://github.com/520limited/dsh-zotero-sync"
+      },
+      "metadata": {
+        "category": "productivity",
+        "keywords": [
+          "dsh",
+          "dsh-plugin",
+          "deepseek-harness",
+          "zotero",
+          "literature",
+          "markdown",
+          "notes"
+        ],
+        "labels": [
+          "zotero",
+          "literature-notes"
+        ]
+      },
+      "versions": [
+        {
+          "version": "1.0.0",
+          "publishTimestamp": 1793164634,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/520limited/dsh-zotero-sync",
+            "commit": "7047a5b4d0a39543db8c5be5fb69033311ef6571"
+          },
+          "engines": {
+            "dsh": ">=0.2.0-0"
+          }
+        }
+      ]
+    }
+  ]
+}
