@@ -67,12 +67,12 @@
       },
       "versions": [
         {
-          "version": "1.1.0",
-          "publishTimestamp": 1793170973,
+          "version": "1.1.1",
+          "publishTimestamp": 1793171551,
           "source": {
             "type": "git",
             "url": "https://github.com/520limited/dsh-zotero-sync",
-            "commit": "c4ec52aaaee0f1cf17c8e8493c18b7ec11e4d534"
+            "commit": "1466c16095bbb987156d0c407a0d3dbc2368a28b"
           },
           "engines": {
             "dsh": ">=0.2.0-0"
