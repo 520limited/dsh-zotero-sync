@@ -143,7 +143,12 @@ function sanitize(input) {
   } else if (input.extensions === null) {
     out.extensions = null;
   }
-  if (typeof input.target === 'string') out.target = input.target.trim().toUpperCase();
+  if (typeof input.target === 'string') {
+    const target = input.target.trim().toUpperCase();
+    // Accept the empty "use wherever Zotero points" value and a real treeViewID only, so a
+    // typo cannot be persisted and then fail every upload with an opaque Zotero 400.
+    if (target === '' || /^[LC]\d+$/u.test(target)) out.target = target;
+  }
   if (Array.isArray(input.tags)) {
     out.tags = [...new Set(input.tags.filter((t) => typeof t === 'string' && t.trim()).map((t) => t.trim()))];
   }

@@ -33,10 +33,13 @@ const DEAD_BASE = 'http://127.0.0.1:23999';
 
 /** Fake session working directory, so a workspace scan never sees the real one. */
 const workspace = mkdtempSync(path.join(os.tmpdir(), 'zts-ws-'));
+// Scratch files used only by the upload tests live OUTSIDE `workspace`, otherwise they would
+// show up in the scope/source candidate assertions above.
+const scratch = mkdtempSync(path.join(os.tmpdir(), 'zts-scratch-'));
 const mdFile = path.join(workspace, '论文精读笔记.md');
 const pdfFile = path.join(workspace, 'paper.pdf');
 const pngFile = path.join(workspace, 'figure.png');
-const throwFile = path.join(workspace, 'throw-me.md');
+const throwFile = path.join(scratch, 'throw-me.md');
 writeFileSync(mdFile, '# 笔记\n正文\n');
 writeFileSync(pdfFile, '%PDF-1.4 fake');
 writeFileSync(pngFile, 'binary-ish');
@@ -245,6 +248,7 @@ need(cfg.ok === true && /Markdown/u.test(cfg.message), 'configure persists scope
 
 rmSync(sandbox, { recursive: true, force: true });
 rmSync(workspace, { recursive: true, force: true });
+rmSync(scratch, { recursive: true, force: true });
 
 console.log(fail === 0 ? '\nALL BEHAVIOUR CHECKS PASSED' : `\n${fail} CHECK(S) FAILED`);
 process.exit(fail === 0 ? 0 : 1);

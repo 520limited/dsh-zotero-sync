@@ -355,7 +355,9 @@ export function apply(ctx, config = {}) {
           return {
             ...base,
             ok: true,
-            message: `已保存配置：来源 ${next.source}｜范围 ${next.scope}｜目标 ${next.target || 'Zotero 当前位置'}｜标签 ${next.tags.join(', ') || '（无）'}`,
+            message:
+              `已保存配置：来源 ${describeSource(next.source)}｜范围 ${describeScope(next.scope)}｜` +
+              `目标 ${next.target || 'Zotero 当前位置'}｜标签 ${next.tags.join(', ') || '（无）'}`,
             settings: summarize(next),
           };
         }

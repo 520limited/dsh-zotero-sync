@@ -92,6 +92,14 @@ need(bundle.includes("id: '" + JSON.parse(readFileSync(path.join(pkg, 'package.j
 need(/factory:\s*function\s*\(\s*require\s*\)/u.test(bundle), 'factory takes require', '');
 need(bundle.includes("require('react')"), 'requires react from the module table', '');
 need(!/from\s+['"]@deepseek-ai/u.test(bundle), 'client imports no Harness package', '');
+
+console.log('--- the client must connect to Zotero only on an actual upload');
+// A mount-time `/zotero status` probe made every conversation reach out to Zotero even when the
+// user never clicked anything. Keep the only client-side command lines the sync ones.
+const clientCommands = [...bundle.matchAll(/'(\/zotero [^']*)'/g)].map((m) => m[1]);
+console.log('        client command lines:', clientCommands.join(' , ') || '(none)');
+need(clientCommands.every((line) => /^\/zotero sync(\s|$)/u.test(line)), 'no eager status/targets probe', clientCommands.join(', '));
+need(!/run\('\/zotero status'\)/u.test(bundle), 'status is not called from a mount effect', '');
 need(/exports\.apply\s*=\s*apply/u.test(bundle), 'returns apply', '');
 need(/exports\.inject\s*=\s*inject/u.test(bundle), 'returns inject', '');
 need(!/import\s+.*from/u.test(bundle), 'no ESM import inside the client bundle', '');

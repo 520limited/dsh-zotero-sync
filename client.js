@@ -230,15 +230,35 @@ window.__ModuleLoader__.load({
       );
     }
 
+    /**
+     * Choose the translator for a component.
+     *
+     * The runner hands `t` to an entry registered with `locale: NS`. If that namespace never
+     * registered (an older host locale service, or a rejected dictionary shape), `t` echoes the
+     * key back — which would paint raw ids in the UI. Detect the echo and fall back.
+     * @param props - slot props.
+     * @param ctx - plugin context.
+     */
+    function resolveT(props, ctx) {
+      var hostT = props && props.t;
+      if (typeof hostT === 'function') {
+        try {
+          var probe = hostT('upload');
+          if (typeof probe === 'string' && probe !== 'upload' && probe.length > 0) return hostT;
+        } catch (error) { /* fall through to the local dictionary */ }
+      }
+      return makeT(ctx, ctx.get && ctx.get('locale'));
+    }
+
     /* ── the turn-tail card ─────────────────────────────────────────────── */
     function DeliverablesTail(props) {
       var ctx = props.__ctx;
       var sessionId = props.sessionId;
       var run = React.useMemo(function () { return commandRunner(ctx, sessionId); }, [ctx, sessionId]);
-      var t = props.t || React.useMemo(function () { return makeT(ctx, ctx.get && ctx.get('locale')); }, [ctx]);
+      var t = React.useMemo(function () { return resolveT(props, ctx); }, [props, ctx]);
 
       var files = React.useMemo(function () { return turnFiles(props.turn); }, [props.turn]);
-      var state = React.useState({ busy: null, byFile: {}, target: null });
+      var state = React.useState({ busy: null, byFile: {}, target: '' });
       var view = state[0];
       var setView = state[1];
       var mounted = React.useRef(true);
@@ -247,20 +267,8 @@ window.__ModuleLoader__.load({
         return function () { mounted.current = false; };
       }, []);
 
-      // Read the remembered destination once per session; a failure is cosmetic only.
-      React.useEffect(function () {
-        if (!sessionId) return undefined;
-        var cancelled = false;
-        run('/zotero status')
-          .then(function (text) {
-            if (cancelled || !mounted.current) return;
-            var hit = /上传目标：([^\n]+)/u.exec(text || '');
-            setView(function (prev) { return { busy: prev.busy, byFile: prev.byFile, target: hit ? hit[1].trim() : '' }; });
-          })
-          .catch(function () { /* keep the card, just without the destination label */ });
-        return function () { cancelled = true; };
-      }, [sessionId, run]);
-
+      // No eager reachability or target probe on mount: Zotero is contacted only when the user
+      // actually clicks upload. The destination label fills in from the first upload's report.
       if (!sessionId || !files.length) return null;
 
       /** Upload one or many files, then record each outcome keyed by path. */
@@ -272,9 +280,12 @@ window.__ModuleLoader__.load({
         run(line)
           .then(function (text) {
             if (!mounted.current) return;
+            // The upload report already names the real destination ("位置 C1"); show it from
+            // here instead of probing Zotero ahead of time.
+            var hit = /位置\s+([LC]\d+)/u.exec(text || '');
             setView({
               busy: null,
-              target: view.target,
+              target: hit ? hit[1] : view.target,
               byFile: assignResults(view.byFile, list, parseOutcomes(text), t),
             });
           })
@@ -425,7 +436,7 @@ window.__ModuleLoader__.load({
       var ctx = props.__ctx;
       var sessionId = props.sessionId;
       var run = React.useMemo(function () { return commandRunner(ctx, sessionId); }, [ctx, sessionId]);
-      var t = props.t || makeT(ctx, ctx.get && ctx.get('locale'));
+      var t = React.useMemo(function () { return resolveT(props, ctx); }, [props, ctx]);
       var state = React.useState({ busy: false, tone: 'idle', text: '' });
       var view = state[0];
       var setView = state[1];

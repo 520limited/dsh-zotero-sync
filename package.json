@@ -13,6 +13,15 @@
     "notes"
   ],
   "license": "MIT",
+  "author": "Ycx66",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/520limited/dsh-zotero-sync.git"
+  },
+  "bugs": {
+    "url": "https://github.com/520limited/dsh-zotero-sync/issues"
+  },
+  "homepage": "https://github.com/520limited/dsh-zotero-sync#readme",
   "type": "module",
   "main": "./index.js",
   "exports": {
@@ -32,10 +41,12 @@
     "history.mjs",
     "cordis.patch.yml",
     "locale/*.json",
-    "icon.svg"
+    "icon.svg",
+    "README.md"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=18",
+    "dsh": ">=0.2.0-0"
   },
   "dsh": {
     "bundle": {

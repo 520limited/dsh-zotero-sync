@@ -20,16 +20,28 @@ const need = (cond, label, extra) => {
   if (!cond) fail++;
 };
 
-/** Records requests and answers with canned responses. */
+/** Records requests and answers with canned responses, honoring the caller's abort signal. */
 function recorder(handler) {
   const seen = [];
-  const fetchImpl = async (url, init = {}) => {
+  const fetchImpl = (url, init = {}) => {
     const headers = {};
     for (const [k, v] of Object.entries(init.headers || {})) headers[String(k).toLowerCase()] = String(v);
     seen.push({ url: String(url), method: init.method, headers, body: init.body, signal: init.signal });
-    return handler(String(url), headers, init);
+    const answer = Promise.resolve().then(() => handler(String(url), headers, init));
+    if (!init.signal) return answer;
+    return new Promise((resolve, reject) => {
+      if (init.signal.aborted) return reject(abortError());
+      init.signal.addEventListener('abort', () => reject(abortError()), { once: true });
+      answer.then(resolve, reject);
+    });
   };
   return { seen, fetchImpl };
+}
+
+function abortError() {
+  const error = new Error('The operation was aborted');
+  error.name = 'AbortError';
+  return error;
 }
 
 const ok = (body = '') => ({
@@ -199,6 +211,8 @@ console.log('--- error mapping');
   try { await new ZoteroConnector({ fetchImpl: readOnly.fetchImpl }).postJson('/connector/saveItems', {}); } catch (e) { err2 = e; }
   need(err2 && err2.code === 'READ_ONLY_LIBRARY', 'read-only library is named', String(err2 && err2.code));
 
+  // Never answers: the connector's own AbortController is what must end this call, and the
+  // recorder wrapper turns that abort into an AbortError the way a real fetch would.
   const timeout = recorder(() => new Promise(() => {}));
   const slow = new ZoteroConnector({ fetchImpl: timeout.fetchImpl, timeoutMs: 30 });
   let err3 = null;
