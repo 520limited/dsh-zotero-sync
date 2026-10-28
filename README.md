@@ -4,6 +4,14 @@
 >
 > A DeepSeek Harness plugin that syncs documents produced in your AI conversations into your local Zotero library — no account, no API key, nothing to install inside Zotero.
 
+![License](https://img.shields.io/badge/License-MIT-blue)
+![Dependencies](https://img.shields.io/badge/dependencies-0-556b2f?logo=npm)
+![Node](https://img.shields.io/badge/Node-%3E%3D18-339933?logo=node.js&logoColor=white)
+![Zotero](https://img.shields.io/badge/Zotero-10.x-red?logo=zotero&logoColor=white)
+![Protocol](https://img.shields.io/badge/Connector%20protocol-verified-orange)
+![Platform](https://img.shields.io/badge/DeepSeek%20Harness-default-4B32C3?logo=deepseek)
+![Status](https://img.shields.io/badge/status-stable-brightgreen)
+
 ## 它解决什么问题
 
 用 DSH（或任何 Agent）做文献精读、写笔记时，产出散落在会话里：这轮一篇 `.md`，那轮一份分析文档。想整理进 Zotero 就得手动拖文件、建条目、配附件。
