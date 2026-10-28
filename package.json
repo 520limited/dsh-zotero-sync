@@ -1,7 +1,6 @@
 {
   "name": "dsh-zotero-sync",
   "version": "1.0.0",
-  "private": true,
   "description": "把对话中产出的 Markdown/文档一键同步到本机 Zotero 文库 / Sync conversation documents into your local Zotero library",
   "keywords": [
     "dsh",
@@ -42,13 +41,15 @@
     "cordis.patch.yml",
     "locale/*.json",
     "icon.svg",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=18",
     "dsh": ">=0.2.0-0"
   },
   "dsh": {
+    "manifestVersion": 1,
     "bundle": {
       "patch": "./cordis.patch.yml"
     },
@@ -56,5 +57,8 @@
       "platform": "web",
       "immediately": true
     }
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
