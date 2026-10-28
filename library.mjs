@@ -119,6 +119,9 @@ export async function itemFulltext(zot, key) {
 /**
  * The absolute local path of an item's best file attachment (Zotero storage), so the agent
  * can read the PDF itself. Accepts a parent item key or an attachment key.
+ *
+ * `GET .../file/view/url` answers 200 with a `file:///D:/...` URL (percent-encoded), not a
+ * plain path — convert it to a native Windows/POSIX path and decode the escapes.
  */
 export async function attachmentPath(zot, key) {
   const itemKey = requireKey(key);
@@ -126,13 +129,31 @@ export async function attachmentPath(zot, key) {
   const response = await zot.getJson(`/api/users/0/items/${attachment.key}/file/view/url`);
   if (response.status === 403) throw libraryError(response, 'LOCAL_API_DISABLED');
   if (response.status >= 400) throw libraryError(response);
-  const localPath = String(response.text || '').trim();
-  if (!localPath) {
+  const path = localPathFromFileUrl(String(response.text || '').trim());
+  if (!path) {
     const error = new Error(`Zotero 未返回 ${attachment.key} 的本地文件路径。`);
     error.code = 'HTTP_4xx';
     throw error;
   }
-  return { attachmentKey: attachment.key, title: attachment.title, contentType: attachment.contentType, path: localPath };
+  return { attachmentKey: attachment.key, title: attachment.title, contentType: attachment.contentType, path };
+}
+
+/** `file:///D:/a%20b.pdf` → `D:\a b.pdf`; `file:///home/x/a.pdf` → `/home/x/a.pdf`. */
+export function localPathFromFileUrl(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (!/^file:\/\//iu.test(text)) return text; // already a plain path
+  let decoded;
+  try {
+    decoded = decodeURI(text);
+  } catch {
+    decoded = text;
+  }
+  const slashed = decoded.replace(/^file:\/\//iu, '');
+  // Windows drive: file:///D:/x → /D:/x → D:/x
+  const drive = slashed.match(/^\/([a-zA-Z]:)(\/.*)$/u);
+  if (drive) return drive[1] + drive[2].replace(/\//gu, '\\');
+  return slashed;
 }
 
 /** Every collection, shallow (api returns a flat list with parentCollection keys). */

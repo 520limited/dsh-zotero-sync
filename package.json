@@ -1,6 +1,6 @@
 {
   "name": "dsh-zotero-sync",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "把对话中产出的 Markdown/文档一键同步到本机 Zotero 文库 / Sync conversation documents into your local Zotero library",
   "keywords": [
     "dsh",

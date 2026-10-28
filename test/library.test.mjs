@@ -7,7 +7,7 @@
  */
 import assert from 'node:assert/strict';
 import { ZoteroConnector } from '../zotero.mjs';
-import { searchItems, itemDetail, itemFulltext, attachmentPath, listCollections, listTags } from '../library.mjs';
+import { searchItems, itemDetail, itemFulltext, attachmentPath, listCollections, listTags, localPathFromFileUrl } from '../library.mjs';
 
 /** Minimal imitation of server_localAPI.js responses. */
 function makeZoteroStub(options = {}) {
@@ -187,6 +187,14 @@ function ok(label) { passed += 1; console.log('  ✓ ' + label); }
   await assert.rejects(() => itemDetail(connector, 'short'), /8 位/);
   assert.equal(calls.length, 0);
   ok('malformed key fails fast without a request');
+}
+
+{
+  // file/view/url answers a file:// URL, not a plain path (verified on live Zotero 10.0.6)
+  assert.equal(localPathFromFileUrl('file:///D:/Zotero/Data/storage/GUDEEG3X/2026%20-%20%E6%96%B9%E5%90%91%E6%8A%A5%E5%91%8A.pdf'), 'D:\\Zotero\\Data\\storage\\GUDEEG3X\\2026 - 方向报告.pdf');
+  assert.equal(localPathFromFileUrl('file:///home/user/paper.pdf'), '/home/user/paper.pdf');
+  assert.equal(localPathFromFileUrl('D:\\plain\\path.pdf'), 'D:\\plain\\path.pdf');
+  ok('file:// URLs (percent-encoded, CJK) convert to native paths');
 }
 
 console.log(`\nALL ${passed} LIBRARY CHECKS PASSED`);
