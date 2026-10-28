@@ -157,7 +157,11 @@ export class ZoteroConnector {
         json = undefined;
       }
     }
-    return { status: response.status, text, json };
+    const responseHeaders = {};
+    response.headers?.forEach?.((value, name) => {
+      responseHeaders[String(name).toLowerCase()] = value;
+    });
+    return { status: response.status, text, json, headers: responseHeaders };
   }
 
   /** POST a JSON body and require a 2xx, translating connector error payloads. */
@@ -169,6 +173,20 @@ export class ZoteroConnector {
     });
     this.#expectOk(endpoint, response);
     return response;
+  }
+
+  /**
+   * GET a Local API path (`/api/users/0/...`) and return { status, text, json, headers }.
+   * Carries `Zotero-API-Version: 3`, which server_localAPI.js requires on every path except
+   * the `/api/` root. Read-only: no key is ever sent because no write is ever attempted.
+   */
+  async getJson(path, search = {}) {
+    return this.request(path, {
+      method: 'GET',
+      contentType: '',
+      search,
+      headers: { 'Zotero-API-Version': '3' },
+    });
   }
 
   #expectOk(endpoint, response) {

@@ -1,8 +1,8 @@
 # dsh-zotero-sync
 
-> DeepSeek Harness 插件：把 **AI 对话中产出的文档**（Markdown 笔记、PDF、Office 文件）一键上传到本机 **Zotero** 桌面端文库。
+> DeepSeek Harness 插件：把 **AI 对话中产出的文档**（Markdown 笔记、PDF、Office 文件）一键上传到本机 **Zotero** 桌面端文库；也能**反向读取文库**——搜索文献、读元数据、提取 PDF 全文、导出 BibTeX。
 >
-> A DeepSeek Harness plugin that syncs documents produced in your AI conversations into your local Zotero library — no account, no API key, nothing to install inside Zotero.
+> A DeepSeek Harness plugin that syncs documents produced in your AI conversations into your local Zotero library — and reads your library back: search, metadata, PDF full text, BibTeX export. No account, no API key, nothing to install inside Zotero.
 
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Dependencies](https://img.shields.io/badge/dependencies-0-556b2f?logo=npm)
@@ -53,12 +53,36 @@
 /zotero sync                   按当前配置上传
 /zotero sync "D:\笔记\a.md"    显式指定文件（支持空格与中文路径）
 /zotero sync --force           忽略去重记录，强制重传
+/zotero find 超声              搜索文库（标题/作者/年份）
+/zotero read ABCD1234          读条目 PDF 全文（--bibtex 导引文，--file 拿路径）
+/zotero collections            列出文库分类
 ```
 
 ### Agent 工具 `zotero_sync`
 
 `action` 取值：`status` · `targets` · `candidates`（预览将上传的文件）· `sync` · `configure`。
 Agent 侧同样受配置约束，不会越权上传你没见过的文件。
+
+## 读取文库（v1.1.0 新增）
+
+除了往 Zotero 里写，插件还能**只读**访问你的文库——让 Agent 直接「看」你收藏了什么文献：
+
+| 动作 | 说明 |
+|---|---|
+| 搜索条目 | 按关键词/标签/条目类型/分类检索，返回标题、作者、年份、期刊 |
+| 条目详情 | 完整元数据 + 附件/笔记列表；可导出 **BibTeX / RIS / CSL JSON** 等引文格式 |
+| **PDF 全文** | 提取附件的全文文本（Zotero 全文索引），Agent 可直接精读论文内容 |
+| 附件路径 | 返回 PDF 在本机的绝对路径，Agent 可用文件工具直接读原文件 |
+| 分类/标签 | 列出所有分类与标签，方便圈定检索范围 |
+
+指令侧：`/zotero find [关键词]`、`/zotero read <KEY>`（`--bibtex` 导引文、`--file` 拿路径）、`/zotero collections`。
+工具侧：`zotero_library`（actions: `search` · `item` · `fulltext` · `file` · `collections` · `tags`）。
+
+典型用法：*“在我 Zotero 里找超声标准切面相关的论文，读一下 2024 年那篇的方法部分，用 APA 引用它。”* —— Agent 会 search → fulltext → 用引用格式回答，全程只读。
+
+**一次性前提**：读取走 Zotero 的 Local API，Zotero 默认关闭它。请在 **Zotero → 设置 → 高级 → 杂项**，勾选 **「允许此计算机上的其他应用程序与 Zotero 通讯」**（Allow other applications on this computer to communicate with Zotero），然后重启 Zotero。上传功能不受此开关影响。
+
+读取永远**只读**：不发写请求、不申请写授权 key、不改动任何条目。
 
 ## 两个正交的配置维度
 
@@ -142,13 +166,13 @@ git clone https://github.com/520limited/dsh-zotero-sync
 | 项 | 说明 |
 |---|---|
 | 网络访问 | 仅访问 `http://127.0.0.1:23119`（本机回环），可在配置中改 `baseUrl`。**不向任何外部服务器发送数据** |
-| 文件读取 | 只读你点「上传」时被选中的文件；`source: session`（默认）下仅限本会话写出/交付过的文件 |
+| 文件读取 | 上传：只读你点「上传」时被选中的文件，`source: session`（默认）下仅限本会话写出/交付过的文件。读文库：只经 Zotero API 取元数据与全文，不碰 `zotero.sqlite` |
 | 文件写入 | 不写 Zotero 数据库。上传历史写在 `plugin-data/dsh-zotero-sync/history.json`（sha1 + 元数据，不含正文） |
-| Zotero 侧 | 每个文件新建一个 `document` 条目 + 附件，会写入你的文库。**协议无删除端点，插件不能撤销已上传条目**，需要你在 Zotero 里手动删 |
-| 静默行为 | 无。挂载时零请求，不做后台轮询、不自动上传 |
+| Zotero 侧 | 上传：每个文件新建一个 `document` 条目 + 附件。**协议无删除端点，插件不能撤销已上传条目**，需要你在 Zotero 里手动删。读文库：**严格只读**，不发送任何写请求，也不申请写授权 |
+| 静默行为 | 无。挂载时零请求，不做后台轮询、不自动上传、不自动读取 |
 | 账号 | 不需要 Zotero 账号或 API Key，也不读取你的任何凭据 |
 
-已知限制：Zotero 必须正在运行；Connector 会话约 10 分钟过期；上传是「新增」语义，不做文库内去重（只对本地已传过的内容去重）。
+已知限制：Zotero 必须正在运行；Connector 会话约 10 分钟过期；上传是「新增」语义，不做文库内去重（只对本地已传过的内容去重）；读文库需一次性开启 Zotero 的本地 API 开关（见上文），PDF 全文依赖 Zotero 的全文索引（未索引的附件拿不到文本）。
 
 ## 开发者：协议要点（踩坑记录）
 
@@ -161,16 +185,26 @@ git clone https://github.com/520limited/dsh-zotero-sync
 5. `updateSession` 对 `target` 无空值保护，任何调用都必须带显式 target。
 6. Connector 保存会话约 10 分钟过期（`SESSION_NOT_FOUND` → 提示重试即可）。
 
+Local API（读取文库，`library.mjs`）同样有坑，改前先读 `server_localAPI.js`：
+
+7. 每个请求必须带 `Zotero-API-Version: 3`，其他版本一律 501（仅 `/api/` 根豁免）；userID 必须 `0`。
+8. 整个 API 在 pref `extensions.zotero.httpServer.localAPI.enabled` 之后，**默认 false**——关着时 `/api/*` 一律 403 "Local API is not enabled"。
+9. GET 免鉴权；写请求需要 `/api/local/authorize` 发的 key——本插件只发 GET，永远不碰。
+10. `/items/:key/file` 是 302 重定向；`/items/:key/file/view/url` 才是 200 明文返回本地路径，插件用后者。
+11. `/items/:key/fulltext` 只对有全文缓存的附件（PDF 等）有效，否则 404；正文来自 Zotero 的全文索引。
+12. 列表响应的分页真相在 `Total-Results` 响应头，不在 body。
+
 ### 代码结构
 
 ```
-index.js        Host 半边：zotero_sync 工具 + /zotero 指令 + 会话产出账本
+index.js        Host 半边：zotero_sync + zotero_library 工具 + /zotero 指令 + 会话产出账本
 client.js       Client 半边：回合卡片 + 输入框胶囊（只发 /zotero sync，挂载时零请求）
 zotero.mjs      Zotero Connector 协议客户端（纯 Node，可独立复用）
+library.mjs     Zotero Local API 只读客户端（搜索/详情/全文/附件路径/分类/标签）
 operations.mjs  文件发现 + 上传编排（source × scope 矩阵、去重）
 settings.mjs    配置层叠与持久化
 history.mjs     内容哈希上传记录
-test/           4 个离线套件 + 1 个显式开关的 live 套件
+test/           5 个离线套件 + 1 个显式开关的 live 套件
 ```
 
 ### 测试
@@ -180,6 +214,7 @@ node test/protocol.test.mjs     # 协议形状（桩 fetch，绝不连真 Zotero
 node test/behaviour.test.mjs    # source×scope 矩阵、配置层叠、工具/指令行为
 node test/package.test.mjs      # 包结构、locale 一致、"挂载零请求"防回归断言
 node test/deliverables.test.mjs # 会话产出账本 → candidates 全链路（离线）
+node test/library.test.mjs      # Local API 只读客户端（桩 /api/users/0）
 
 # 会向你的真实 Zotero 文库创建条目，默认跳过：
 ZTS_LIVE=1 node test/live-sync.test.mjs

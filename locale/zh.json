@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Zotero 同步",
-    "description": "把对话中产出的文档（Markdown 笔记、PDF、Office 文件）上传到本机 Zotero 文库，走 Zotero 自带的本地服务 127.0.0.1:23119，无需 API Key，也不用在 Zotero 里装任何东西。在每回合交付物旁加一行上传入口，另有输入框快捷按钮、/zotero 指令与 zotero_sync 工具；可选择目标集合、把范围收窄到只要 Markdown，内容未变化的文件自动跳过而不重复建条目。"
+    "description": "把对话中产出的文档（Markdown 笔记、PDF、Office 文件）上传到本机 Zotero 文库，并可只读检索文库文献：搜索条目、读元数据、提取 PDF 全文、拿附件本地路径，还能导出 BibTeX/RIS。走 Zotero 自带的本地服务 127.0.0.1:23119，无需 API Key，也不用在 Zotero 里装任何东西。上传入口在每回合交付物旁与输入框快捷按钮，/zotero 指令与 zotero_sync / zotero_library 工具覆盖全部能力；内容未变化的文件自动跳过而不重复建条目。"
   },
   "zotero": {
     "section": "Zotero",

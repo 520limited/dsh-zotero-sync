@@ -29,6 +29,7 @@ import path from 'node:path';
 import { ZoteroConnector } from './zotero.mjs';
 import { loadSettings, saveSettings, SCOPES, SOURCE_KEYS } from './settings.mjs';
 import { collectCandidates, syncMany, describeError, tally } from './operations.mjs';
+import { searchItems, itemDetail, itemFulltext, attachmentPath, listCollections, listTags, formatItemRow, EXPORT_FORMATS } from './library.mjs';
 
 const PACKAGE_ID = 'dsh-zotero-sync';
 
@@ -128,6 +129,160 @@ export function apply(ctx, config = {}) {
         `target ${ready.target || 'Zotero selection'})`,
     );
   }
+
+  ctx.inject(['tools'], (scope) => {
+    scope.tools.register({
+      name: 'zotero_library',
+      description:
+        "Search and read the user's local Zotero library, READ-ONLY (the user has granted access). Talks to Zotero's local API on 127.0.0.1:23119; Zotero must be running AND the user must have enabled Preferences → Advanced → \"Allow other applications on this computer to communicate with Zotero\" — if they did not, the error message says so and nothing else is wrong. Actions: \"search\" finds top-level items (query text, tag, itemType filter like -attachment or journalArticle, collection key); \"item\" returns one item's full metadata by its 8-character key, with attachments and notes, or an export format (bibtex|ris|csljson|...) as text; \"fulltext\" returns the extracted plain text of an item's PDF attachment (great for actually reading a paper); \"file\" returns the absolute local path of the item's attachment so you can read the file itself; \"collections\" lists collections; \"tags\" lists tags. Never creates, modifies, or deletes anything. Item keys come from search results, not from thin air.",
+      parameters: {
+        type: 'object',
+        properties: {
+          action: {
+            type: 'string',
+            enum: ['search', 'item', 'fulltext', 'file', 'collections', 'tags'],
+            description: 'What to do.',
+          },
+          query: {
+            type: 'string',
+            description: 'Search text (title/creator/year). Empty lists recent items.',
+          },
+          tag: { type: 'string', description: 'Filter by tag.' },
+          itemType: {
+            type: 'string',
+            description: 'Zotero item type filter, e.g. "journalArticle", "book", or "-attachment" (default excludes attachments).',
+          },
+          collection: {
+            type: 'string',
+            description: '8-character collection key to search within (from the "collections" action).',
+          },
+          key: { type: 'string', description: '8-character item key, for item/fulltext/file.' },
+          format: {
+            type: 'string',
+            enum: [...EXPORT_FORMATS],
+            description: 'With action "item": return a citation export (bibtex, ris, csljson…) as text instead of JSON metadata.',
+          },
+          limit: { type: 'number', description: 'Page size, 1-100 (default 25).' },
+          start: { type: 'number', description: 'Offset for paging through results.' },
+          sort: {
+            type: 'string',
+            description: 'dateModified (default) | dateAdded | title | creator | date.',
+          },
+          direction: { type: 'string', enum: ['asc', 'desc'], description: 'Sort direction, default desc.' },
+        },
+        required: ['action'],
+      },
+      output: {
+        schema: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            action: { type: 'string', required: true },
+            ok: { type: 'boolean', required: true },
+            message: { type: 'string', required: true },
+            total: { type: 'integer' },
+            items: { type: 'array', items: { type: 'object' } },
+            item: { type: 'object' },
+            fulltext: { type: 'string' },
+            path: { type: 'string' },
+            text: { type: 'string' },
+            collections: { type: 'array', items: { type: 'object' } },
+            tags: { type: 'array', items: { type: 'object' } },
+          },
+        },
+        render: (_args, value) => [{ type: 'text', text: value.message }],
+      },
+      timeoutMs: 60_000,
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        void exec;
+        const action = String((args && args.action) || '');
+        const zot = connector();
+        const base = { action, baseUrl: settings().baseUrl };
+        try {
+          if (action === 'search') {
+            const found = await searchItems(zot, {
+              query: args && args.query,
+              tag: args && args.tag,
+              itemType: args && args.itemType,
+              collection: args && args.collection,
+              limit: args && args.limit,
+              start: args && args.start,
+              sort: args && args.sort,
+              direction: args && args.direction,
+            });
+            const head = found.total
+              ? `找到 ${found.total} 个条目${args && args.query ? `（“${args.query}”）` : ''}${found.items.length < found.total ? `，显示 ${found.items.length} 个` : ''}：`
+              : `没有匹配的条目${args && args.query ? `（“${args.query}”）` : ''}。`;
+            return {
+              ...base,
+              ok: true,
+              message: head + (found.items.length ? '\n' + found.items.map(formatItemRow).join('\n') : ''),
+              total: found.total,
+              items: found.items,
+            };
+          }
+          if (action === 'item') {
+            const detail = await itemDetail(zot, args && args.key, { format: args && args.format });
+            if (detail.text !== undefined) {
+              return { ...base, ok: true, message: `条目 ${(args.key || '').toUpperCase()} 的 ${detail.format} 导出：\n${detail.text}`, text: detail.text };
+            }
+            const lines = [`《${detail.title}》 (${detail.itemType}, ${detail.key})`];
+            if (detail.creators.length) lines.push(`作者：${detail.creators.join('; ')}`);
+            if (detail.year) lines.push(`年份：${detail.year}${detail.journal ? `｜期刊：${detail.journal}` : ''}`);
+            if (detail.doi) lines.push(`DOI：${detail.doi}`);
+            if (detail.abstract) lines.push(`摘要：${detail.abstract}`);
+            if (detail.tags.length) lines.push(`标签：${detail.tags.join(', ')}`);
+            for (const att of detail.attachments || []) lines.push(`附件：${att.key} ${att.title}${att.filename ? ` (${att.filename})` : ''}`);
+            for (const note of detail.notes || []) lines.push(`笔记：${note.key} ${note.title}`);
+            lines.push('提示：用 action=fulltext 读取 PDF 全文，action=file 拿本地文件路径。');
+            return { ...base, ok: true, message: lines.join('\n'), item: detail };
+          }
+          if (action === 'fulltext') {
+            const full = await itemFulltext(zot, args && args.key);
+            const content = full.content;
+            const shown = content.length > 40000 ? content.slice(0, 40000) + `\n…（共 ${content.length} 字符，已截断）` : content;
+            return {
+              ...base,
+              ok: true,
+              message: `《${full.attachmentTitle}》全文（${content.length} 字符）:\n${shown}`,
+              fulltext: content,
+            };
+          }
+          if (action === 'file') {
+            const where = await attachmentPath(zot, args && args.key);
+            return {
+              ...base,
+              ok: true,
+              message: `附件本地路径（${where.contentType || '未知类型'}）：${where.path}`,
+              path: where.path,
+            };
+          }
+          if (action === 'collections') {
+            const listed = await listCollections(zot);
+            return {
+              ...base,
+              ok: true,
+              message: `共 ${listed.total} 个分类：\n` + listed.collections.map((c) => `  ${c.key}  ${c.name}${c.itemCount != null ? ` (${c.itemCount})` : ''}`).join('\n'),
+              collections: listed.collections,
+            };
+          }
+          if (action === 'tags') {
+            const listed = await listTags(zot, { query: args && args.query, limit: args && args.limit });
+            return {
+              ...base,
+              ok: true,
+              message: `共 ${listed.total} 个标签：\n` + listed.tags.map((t) => `  ${t.tag} (${t.itemCount ?? '?'})`).join('\n'),
+              tags: listed.tags,
+            };
+          }
+          throw new Error(`zotero_library: unknown action "${action}" (search | item | fulltext | file | collections | tags)`);
+        } catch (error) {
+          return { ...base, ok: false, message: describeError(error) };
+        }
+      },
+    });
+  });
 
   ctx.inject(['tools'], (scope) => {
     scope.tools.register({
@@ -370,9 +525,9 @@ export function apply(ctx, config = {}) {
   ctx.inject(['commands'], (scope) => {
     scope.commands.register({
       name: 'zotero',
-      description: '把本会话产出的文档同步到本机 Zotero（状态 / 选集合 / 范围 / 上传）',
+      description: 'Zotero 同步与文献检索：上传本会话产出文档，或搜索/阅读文库中的文献',
       definitionId: PACKAGE_ID,
-      input: { hint: '[status | targets | use <ID> | scope <md|docs|all> | source <session|workspace> | sync [路径…] [--force]]' },
+      input: { hint: '[status | targets | use <ID> | scope <md|docs|all> | source <session|workspace> | sync [路径…] [--force] | find [关键词] | read <KEY> [--bibtex|--file] | collections]' },
       handler: async ({ agent, rawInput, signal }) => {
         const parts = tokenize(rawInput);
         const verb = (parts[0] || 'status').toLowerCase();
@@ -465,9 +620,45 @@ export function apply(ctx, config = {}) {
             return counts.failCount && !counts.okCount ? { kind: 'error', text } : { kind: 'success', text };
           }
 
+          if (verb === 'find' || verb === 'search') {
+            const query = parts.slice(1).join(' ').trim();
+            const found = await searchItems(zot, { query: query || undefined, limit: 15 });
+            if (!found.items.length) return { kind: 'success', text: `文库中没有匹配「${query || '（最近条目）'}」的条目。` };
+            return {
+              kind: 'success',
+              text: `找到 ${found.total} 个条目：\n` + found.items.map(formatItemRow).join('\n') + '\n用 /zotero read <KEY> 看详情或读 PDF 全文。',
+            };
+          }
+
+          if (verb === 'read') {
+            const key = String(parts[1] || '').trim().toUpperCase();
+            if (!/^[A-Z0-9]{8}$/u.test(key)) {
+              return { kind: 'error', text: '用法：/zotero read <8位条目key>（先用 /zotero find 查到 key）。' };
+            }
+            if (parts.includes('--bibtex')) {
+              const exported = await itemDetail(zot, key, { format: 'bibtex' });
+              return { kind: 'success', text: exported.text };
+            }
+            if (parts.includes('--file')) {
+              const where = await attachmentPath(zot, key);
+              return { kind: 'success', text: `附件本地路径：${where.path}` };
+            }
+            const full = await itemFulltext(zot, key);
+            const content = full.content.length > 12000 ? full.content.slice(0, 12000) + `\n…（全文 ${full.content.length} 字符，已截断；让 Agent 用 zotero_library 工具读完整版）` : full.content;
+            return { kind: 'success', text: `《${full.attachmentTitle}》全文：\n${content}` };
+          }
+
+          if (verb === 'collections' || verb === 'cols') {
+            const listed = await listCollections(zot);
+            return {
+              kind: 'success',
+              text: `Zotero 分类（${listed.total}）：\n` + listed.collections.map((c) => `  ${c.key}  ${c.name}${c.itemCount != null ? ` (${c.itemCount})` : ''}`).join('\n'),
+            };
+          }
+
           return {
             kind: 'error',
-            text: `未知子命令 /zotero ${verb}。可用：status、targets、use <ID>、scope <md|docs|all>、source <session|workspace>、sync [路径…] [--force]。`,
+            text: `未知子命令 /zotero ${verb}。可用：status、targets、use <ID>、scope <md|docs|all>、source <session|workspace>、sync [路径…] [--force]、find [关键词]、read <KEY> [--bibtex|--file]、collections。`,
           };
         } catch (error) {
           return { kind: 'error', text: describeError(error) };

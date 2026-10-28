@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Zotero Sync",
-    "description": "Uploads the documents this conversation produced — Markdown notes, PDFs, Office files — into your local Zotero library through Zotero's built-in connector on 127.0.0.1:23119. No API key and nothing to install inside Zotero. Adds an upload row beside each turn's deliverables, a composer chip, a /zotero command, and a zotero_sync tool. Choose the destination collection, restrict the scope to Markdown only, and unchanged files are skipped instead of duplicated."
+    "description": "Uploads the documents this conversation produced — Markdown notes, PDFs, Office files — into your local Zotero library, and reads your library back: search items, inspect metadata, extract PDF full text, resolve attachment paths, and export BibTeX/RIS. Talks to Zotero's built-in local server on 127.0.0.1:23119 — no API key and nothing to install inside Zotero. Upload rows sit beside each turn's deliverables plus a composer chip; the /zotero command and the zotero_sync / zotero_library tools cover everything. Unchanged files are skipped instead of duplicated."
   },
   "zotero": {
     "section": "Zotero",
