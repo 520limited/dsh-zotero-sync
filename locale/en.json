@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "title": "Zotero Sync",
+    "description": "Uploads the documents this conversation produced — Markdown notes, PDFs, Office files — into your local Zotero library through Zotero's built-in connector on 127.0.0.1:23119. No API key and nothing to install inside Zotero. Adds an upload row beside each turn's deliverables, a composer chip, a /zotero command, and a zotero_sync tool. Choose the destination collection, restrict the scope to Markdown only, and unchanged files are skipped instead of duplicated."
+  },
+  "zotero": {
+    "section": "Zotero",
+    "upload": "Upload to Zotero",
+    "uploadAll": "Upload {count} documents to Zotero",
+    "uploading": "Uploading…",
+    "uploaded": "Uploaded",
+    "skipped": "Already there",
+    "failed": "Upload failed",
+    "noResult": "No result returned",
+    "offline": "Zotero is not responding — start the Zotero desktop app",
+    "noFiles": "No uploadable documents in this turn",
+    "target": "Target",
+    "chip": "Zotero sync",
+    "aria": "Sync this turn's documents to the Zotero library",
+    "retry": "Retry"
+  }
+}

@@ -1,0 +1,31 @@
+- insert:
+    - id: zotero-sync
+      name: dsh-zotero-sync
+      config:
+        # Zotero's built-in connector server. Change this only if Zotero listens elsewhere
+        # (Zotero > Settings > General).
+        baseUrl: http://127.0.0.1:23119
+
+        # 上传范围（文件类型）：md = 只要 Markdown；docs = Markdown + PDF + Office + 网页/电子书；
+        # all = 所有类型，但只对本会话产出的文件生效。
+        # Upload scope by file type: md | docs | all (all is session-source only).
+        scope: docs
+
+        # 文件来源：session = 只传本会话写出/交付的文件；workspace = 扫描工作目录。
+        # Where files come from: session | workspace.
+        source: session
+
+        # 每个上传条目的 Zotero 标签。
+        tags: ['DSH对话笔记']
+
+        # 记住的 Zotero 目标位置（L1 是文库，C23 是集合）。留空表示"用 Zotero 当前选中的位置"。
+        # Set it at runtime with /zotero use <ID>, the chip, or zotero_sync.
+        target: ''
+
+        # workspace 来源的扫描上限与深度、单文件大小上限。
+        workspaceLimit: 20
+        workspaceDepth: 3
+        maxFileBytes: 83886080
+
+        # 显式给出 extensions 时覆盖 scope 的类型表，例如只要 Markdown 和 PDF：
+        # extensions: ['.md', '.pdf']

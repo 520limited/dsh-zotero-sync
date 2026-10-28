@@ -1,0 +1,49 @@
+{
+  "name": "dsh-zotero-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "把对话中产出的 Markdown/文档一键同步到本机 Zotero 文库 / Sync conversation documents into your local Zotero library",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "zotero",
+    "literature",
+    "markdown",
+    "notes"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./zotero.mjs": "./zotero.mjs",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "zotero.mjs",
+    "settings.mjs",
+    "operations.mjs",
+    "history.mjs",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  }
+}
