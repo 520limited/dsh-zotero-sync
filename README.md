@@ -1,20 +1,25 @@
-<center>
-<pre>
-# dsh-zotero-sync
-</pre>
-</center>
+<p align="center">
+  <img src="icon.svg" width="128" alt="dsh-zotero-sync">
+</p>
 
-> DeepSeek Harness 插件：把 **AI 对话中产出的文档**（Markdown 笔记、PDF、Office 文件）一键上传到本机 **Zotero** 桌面端文库；也能**反向读取文库**——搜索文献、读元数据、提取 PDF 全文、导出 BibTeX。
->
-> A DeepSeek Harness plugin that syncs documents produced in your AI conversations into your local Zotero library — and reads your library back: search, metadata, PDF full text, BibTeX export. No account, no API key, nothing to install inside Zotero.
+<h1 align="center">dsh-zotero-sync</h1>
 
-![License](https://img.shields.io/badge/License-MIT-blue)
-![Dependencies](https://img.shields.io/badge/dependencies-0-556b2f?logo=npm)
-![Node](https://img.shields.io/badge/Node-%3E%3D18-339933?logo=node.js&logoColor=white)
-![Zotero](https://img.shields.io/badge/Zotero-10.x-red?logo=zotero&logoColor=white)
-![Protocol](https://img.shields.io/badge/Connector%20protocol-verified-orange)
-![Platform](https://img.shields.io/badge/DeepSeek%20Harness-default-4B32C3?logo=deepseek)
-![Status](https://img.shields.io/badge/status-stable-brightgreen)
+<p align="center">
+  <b><a href="#dsh-zotero-sync">简体中文</a></b> | <a href="#dsh-zotero-sync-1">English</a>
+</p>
+
+<p align="center">
+  <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue" alt="License MIT"></a>
+  <a href="#要求"><img src="https://img.shields.io/badge/dependencies-0-556b2f?logo=npm" alt="dependencies 0"></a>
+  <img src="https://img.shields.io/badge/build%20step-none-9ea7b3" alt="build step none">
+  <img src="https://img.shields.io/badge/dsh-0.1.5--0.1.7--rc.2-2E7D32" alt="dsh 0.1.5-0.1.7-rc.2">
+  <img src="https://img.shields.io/badge/status-stable-orange" alt="status stable">
+</p>
+
+<p align="center">
+  <sub>DeepSeek Harness 插件：把 <b>AI 对话中产出的文档</b>（Markdown 笔记、PDF、Office 文件）一键上传到本机 <b>Zotero</b> 桌面端文库；也能<b>反向读取文库</b>——搜索文献、读元数据、提取 PDF 全文、导出 BibTeX。</sub><br>
+  <sub><i>A DeepSeek Harness plugin that syncs documents produced in your AI conversations into your local Zotero library — and reads your library back: search, metadata, PDF full text, BibTeX export. No account, no API key, nothing to install inside Zotero.</i></sub>
+</p>
 
 ## 它解决什么问题
 
