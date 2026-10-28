@@ -83,7 +83,14 @@ Agent 侧同样受配置约束，不会越权上传你没见过的文件。
 
 ## 安装
 
-### 方式一：从插件商店（Discover）
+### 方式一：命令行安装（推荐）
+
+```bash
+# 源码安装，无需 npm 包
+dsh plugin --profile web add github:520limited/dsh-zotero-sync
+```
+
+### 方式二：从 DSH 内置插件市场（Discover）
 
 在 DSH 设置 → 插件 → 索引源（indexes）里添加本仓库的索引地址：
 
@@ -93,17 +100,11 @@ https://raw.githubusercontent.com/520limited/dsh-zotero-sync/main/market/index.j
 
 之后在 Discover 页搜索 "zotero" 即可一键安装。
 
-### 方式二：npm（发布后）
-
-```
-在插件管理器输入包名 dsh-zotero-sync 安装
-```
-
-### 方式三：本地目录
+### 方式三：本地目录（开发调试）
 
 ```bash
-# 把仓库 clone 到任意目录后，在 DSH 插件管理器里安装该目录
-git clone https://github.com/<你的用户名>/dsh-zotero-sync
+git clone https://github.com/520limited/dsh-zotero-sync
+# 然后在 DSH 插件管理器里安装该目录
 ```
 
 安装后**重启一次 DSH**（桌面端打包运行，插件的 Client 半边需要随页面重新加载）。
@@ -130,9 +131,24 @@ git clone https://github.com/<你的用户名>/dsh-zotero-sync
 
 ## 要求
 
-- DSH（DeepSeek Harness）桌面版 / Web 版
+- DSH（DeepSeek Harness）桌面版 / Web 版，`engines.dsh: >=0.2.0-0`
 - Zotero 桌面端运行中
 - Node ≥ 18（DSH 自带）
+
+## 权限与风险说明
+
+透明起见，装上这个插件后会发生什么、以及它不做什么：
+
+| 项 | 说明 |
+|---|---|
+| 网络访问 | 仅访问 `http://127.0.0.1:23119`（本机回环），可在配置中改 `baseUrl`。**不向任何外部服务器发送数据** |
+| 文件读取 | 只读你点「上传」时被选中的文件；`source: session`（默认）下仅限本会话写出/交付过的文件 |
+| 文件写入 | 不写 Zotero 数据库。上传历史写在 `plugin-data/dsh-zotero-sync/history.json`（sha1 + 元数据，不含正文） |
+| Zotero 侧 | 每个文件新建一个 `document` 条目 + 附件，会写入你的文库。**协议无删除端点，插件不能撤销已上传条目**，需要你在 Zotero 里手动删 |
+| 静默行为 | 无。挂载时零请求，不做后台轮询、不自动上传 |
+| 账号 | 不需要 Zotero 账号或 API Key，也不读取你的任何凭据 |
+
+已知限制：Zotero 必须正在运行；Connector 会话约 10 分钟过期；上传是「新增」语义，不做文库内去重（只对本地已传过的内容去重）。
 
 ## 开发者：协议要点（踩坑记录）
 
@@ -172,3 +188,7 @@ ZTS_LIVE=1 node test/live-sync.test.mjs
 ## License
 
 MIT
+
+---
+
+[![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/zh/plugins/520limited/dsh-zotero-sync)
