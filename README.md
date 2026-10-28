@@ -1,4 +1,8 @@
+<center>
+<pre>
 # dsh-zotero-sync
+</pre>
+</center>
 
 > DeepSeek Harness 插件：把 **AI 对话中产出的文档**（Markdown 笔记、PDF、Office 文件）一键上传到本机 **Zotero** 桌面端文库；也能**反向读取文库**——搜索文献、读元数据、提取 PDF 全文、导出 BibTeX。
 >
