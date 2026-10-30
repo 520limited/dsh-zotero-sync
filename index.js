@@ -288,7 +288,7 @@ export function apply(ctx, config = {}) {
     scope.tools.register({
       name: 'zotero_sync',
       description:
-        "Upload documents produced in this conversation into the user's local Zotero desktop library. Zotero must be running; this talks to its built-in connector on 127.0.0.1:23119 (no API key, no Zotero add-on). Actions: \"status\" reports reachability and the current configuration; \"targets\" lists libraries and collections as ids like L1 or C23; \"candidates\" shows which files a source+scope pair would upload; \"sync\" uploads; \"configure\" changes defaults (source = session|workspace, scope = md|docs|all, target, tags, baseUrl). Scope \"md\" means Markdown only, \"docs\" adds PDF/Office/web/ebook, \"all\" takes any file but only for source=session. Uploads are deduplicated by content hash, so re-syncing an unchanged file reports it is already in Zotero instead of creating a duplicate item. Pass set_target or set_source/set_scope with configure to persist a choice. Failures carry a bracketed reason code. Nothing is written into the workspace.",
+        "Upload documents produced in this conversation into the user's local Zotero desktop library. Zotero must be running; this talks to its built-in connector on 127.0.0.1:23119 (no API key, no Zotero add-on). Actions: \"status\" reports reachability and the current configuration; \"targets\" lists libraries and collections as ids like L1 or C23; \"candidates\" shows which files a source+scope pair would upload; \"sync\" uploads; \"configure\" changes defaults (source = session|workspace, scope = md|docs|all, target, tags, grouped, baseUrl). By default several files uploaded in one \"sync\" call land in ONE library entry, each file stored as an attachment of it (groupIntoOne); pass grouped=false to give every file its own entry instead. Scope \"md\" means Markdown only, \"docs\" adds PDF/Office/web/ebook, \"all\" takes any file but only for source=session. Uploads are deduplicated by content hash, so re-syncing an unchanged file reports it is already in Zotero instead of creating a duplicate item. Pass set_target or set_source/set_scope with configure to persist a choice. Failures carry a bracketed reason code. Nothing is written into the workspace.",
       parameters: {
         type: 'object',
         properties: {
@@ -327,7 +327,13 @@ export function apply(ctx, config = {}) {
           },
           title: {
             type: 'string',
-            description: 'Item title when uploading a single file. Defaults to the file name without extension.',
+            description:
+              'Parent item title. In group mode this is the single entry\'s title; with one file it titles that entry. Defaults to the first file name without extension.',
+          },
+          grouped: {
+            type: 'boolean',
+            description:
+              'Merge all files of this call into ONE Zotero entry, each file stored as an attachment of it. Defaults to the configured groupIntoOne (true). Set false to create one separate entry per file.',
           },
           force: {
             type: 'boolean',
@@ -488,6 +494,7 @@ export function apply(ctx, config = {}) {
             target,
             tags: mergeTags(args && args.tags, current),
             title: args && args.title,
+            grouped: args && typeof args.grouped === 'boolean' ? args.grouped : current.groupIntoOne !== false,
             force: args && args.force === true,
             rememberTargetOnSuccess: !target,
             onSetTarget: (id) => persistTarget(id, current),
@@ -585,6 +592,23 @@ export function apply(ctx, config = {}) {
             return writePatch({ source: key }, current, `文件来源已设为 ${describeSource(key)}`);
           }
 
+          if (verb === 'group' || verb === 'grouping') {
+            const key = String(parts[1] || '').trim().toLowerCase();
+            const on = ['on', '1', 'true', 'yes'].includes(key);
+            const off = ['off', '0', 'false', 'no'].includes(key);
+            if (!on && !off) {
+              return {
+                kind: 'error',
+                text: `当前多文件上传：${current.groupIntoOne !== false ? '合并进一个条目' : '每个文件一个条目'}。用法：/zotero group on（多文件建一个条目）| /zotero group off（一文件一条目）。`,
+              };
+            }
+            return writePatch(
+              { groupIntoOne: on },
+              current,
+              on ? '多文件上传已设为合并进一个条目（各文件作为附件）。' : '多文件上传已设为每个文件一个独立条目（旧行为）。',
+            );
+          }
+
           if (verb === 'sync' || verb === 'upload' || verb === 'here') {
             const explicit = parts.slice(1).filter((p) => !p.startsWith('--'));
             const force = parts.includes('--force');
@@ -611,6 +635,7 @@ export function apply(ctx, config = {}) {
               candidates: found,
               target: rememberedTarget(current),
               tags: mergeTags(undefined, current),
+              grouped: current.groupIntoOne !== false,
               force,
               rememberTargetOnSuccess: true,
               onSetTarget: (id) => persistTarget(id, current),
@@ -658,7 +683,7 @@ export function apply(ctx, config = {}) {
 
           return {
             kind: 'error',
-            text: `未知子命令 /zotero ${verb}。可用：status、targets、use <ID>、scope <md|docs|all>、source <session|workspace>、sync [路径…] [--force]、find [关键词]、read <KEY> [--bibtex|--file]、collections。`,
+            text: `未知子命令 /zotero ${verb}。可用：status、targets、use <ID>、scope <md|docs|all>、source <session|workspace>、group <on|off>、sync [路径…] [--force]、find [关键词]、read <KEY> [--bibtex|--file]、collections。`,
           };
         } catch (error) {
           return { kind: 'error', text: describeError(error) };
@@ -743,6 +768,8 @@ function configurePatch(args) {
   }
   if (args && args.target && /^[LC]\d+$/u.test(String(args.target))) out.target = String(args.target).toUpperCase();
   if (args && Array.isArray(args.tags)) out.tags = args.tags;
+  if (args && typeof args.groupIntoOne === 'boolean') out.groupIntoOne = args.groupIntoOne;
+  if (args && typeof args.grouped === 'boolean') out.groupIntoOne = args.grouped;
   if (args && typeof args.baseUrl === 'string' && /^https?:\/\//iu.test(args.baseUrl)) out.baseUrl = args.baseUrl;
   return out;
 }
@@ -760,6 +787,7 @@ function summarize(current) {
     scope: current.scope,
     target: current.target,
     tags: current.tags,
+    groupIntoOne: current.groupIntoOne !== false,
     workspaceLimit: current.workspaceLimit,
   };
 }
@@ -780,15 +808,28 @@ function describeTarget(info, target) {
 }
 
 function formatOutcomes(outcomes, { okCount, skippedCount, failCount }) {
-  const lines = outcomes.map((o) => {
-    if (o.error) return `✗ ${shortPath(o.file)}\n    ${o.error}`;
-    if (o.skipped) return `＝ ${shortPath(o.file)}\n    ${o.reason}`;
-    return `✓ ${shortPath(o.file)} → 《${o.title}》附件「${o.attachment}」位置 ${o.target}`;
-  });
+  // Group mode: several files share one Zotero entry. Say so once instead of repeating the same
+  // "→ 《title》位置 C23" line for every attachment.
+  const groupedOk = outcomes.filter((o) => !o.error && !o.skipped && o.grouped);
+  const lines = [];
+  if (groupedOk.length > 1) {
+    lines.push(`✓ 合并为 1 个条目《${groupedOk[0].title}》→ 位置 ${groupedOk[0].target}，含 ${groupedOk.length} 个附件：`);
+    for (const o of groupedOk) lines.push(`    · ${o.attachment || shortPath(o.file)}`);
+  }
+  for (const o of outcomes) {
+    if (o.error) { lines.push(`✗ ${shortPath(o.file)}\n    ${o.error}`); continue; }
+    if (o.skipped) { lines.push(`＝ ${shortPath(o.file)}\n    ${o.reason}`); continue; }
+    if (groupedOk.length > 1 && o.grouped) continue; // already summarized above
+    lines.push(`✓ ${shortPath(o.file)} → 《${o.title}》附件「${o.attachment}」位置 ${o.target}`);
+  }
+
+  const groupCount = groupedOk.length > 1 ? 1 : 0;
   const head =
     failCount === 0
       ? okCount
-        ? `已上传 ${okCount} 个文件到 Zotero${skippedCount ? `，${skippedCount} 个内容未变化跳过` : ''}。`
+        ? groupCount
+          ? `已上传 ${okCount} 个文件到 Zotero，合并为 1 个条目${skippedCount ? `，${skippedCount} 个内容未变化跳过` : ''}。`
+          : `已上传 ${okCount} 个文件到 Zotero${skippedCount ? `，${skippedCount} 个内容未变化跳过` : ''}。`
         : `${skippedCount} 个文件内容未变化，已在 Zotero 中（需要重复上传用 --force）。`
       : `成功 ${okCount} 个，跳过 ${skippedCount} 个，失败 ${failCount} 个。`;
   return head + '\n' + lines.join('\n');

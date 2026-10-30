@@ -40,6 +40,8 @@
 
 每个文件创建为一个 `document` 条目（标题 = 文件名或你指定的标题，`libraryCatalog` 显示 `DeepSeek Harness`），原文件作为附件流式写入 Zotero storage，中文/emoji 文件名与标题无损往返。
 
+**一次同步多个文件时，默认合并进同一个条目**（v1.2.0 起）：标题取第一个文件名或你用 `title` 指定的名字，其余文件都作为这个条目的附件，所以在 Zotero 里只多一个文献条目、不刷屏。想恢复"一个文件一个条目"用 `/zotero group off` 或 `configure` 传 `grouped: false`。
+
 ## 四个入口，一个操作
 
 | 入口 | 位置 | 范围 |
@@ -59,6 +61,7 @@
 /zotero use C23                记住目标集合，之后所有上传都送到这里
 /zotero scope md               设置文件类型范围（md | docs | all）
 /zotero source workspace       设置文件来源（session | workspace）
+/zotero group on               多文件合并进一个条目（默认）｜ off = 一文件一条目
 /zotero sync                   按当前配置上传
 /zotero sync "D:\笔记\a.md"    显式指定文件（支持空格与中文路径）
 /zotero sync --force           忽略去重记录，强制重传
@@ -110,6 +113,13 @@ Agent 侧同样受配置约束，不会越权上传你没见过的文件。
 | `docs`（默认） | Markdown + txt + PDF + Office + 网页/电子书 |
 | `all` | 不限类型，**仅对 session 来源生效**（避免工作区扫描拖进无关二进制） |
 
+**组织方式 groupIntoOne —— 多文件落到几个条目**
+
+| 值 | 含义 |
+|---|---|
+| `true`（默认） | 一次上传的多个文件合并进**一个** Zotero 条目，各文件是该条目的附件 |
+| `false` | 每个文件一个独立条目（v1.1 及更早的行为） |
+
 ## 去重
 
 按**文件内容 sha1** 记一笔上传历史。内容没变的文件再次 sync 会报告"已在 Zotero（位置 C1，《标题》）"而不会建重复条目；`--force` 可强推。历史记录在 `plugin-data/dsh-zotero-sync/history.json`，删掉即"失忆"。
@@ -153,6 +163,7 @@ git clone https://github.com/520limited/dsh-zotero-sync
     baseUrl: http://127.0.0.1:23119
     scope: docs          # md | docs | all
     source: session      # session | workspace
+    groupIntoOne: true   # true = 多文件合并成一个条目；false = 一文件一条目
     target: ''           # 留空 = 跟随 Zotero 当前选中的位置
     tags: ['DSH对话笔记']
     workspaceLimit: 20
@@ -193,6 +204,11 @@ git clone https://github.com/520limited/dsh-zotero-sync
 4. `X-Metadata` 头按 latin-1 传输，非 ASCII 一律 `\uXXXX` 转义，中文标题才能无损往返。
 5. `updateSession` 对 `target` 无空值保护，任何调用都必须带显式 target。
 6. Connector 保存会话约 10 分钟过期（`SESSION_NOT_FOUND` → 提示重试即可）。
+13. **多文件合并进一个条目**靠的不是多次 `saveFile`（那样每条都建自己的父条目），而是复用**同一个**
+    session：`/connector/saveItems` 建一次父条目，随后对同一 `parentItemID`（即同一个 connector key）
+    反复调 `/connector/saveAttachment`。`SaveAttachment` 内部是
+    `session.getItemByConnectorKey(metadata.parentItemID)`，key 一旦不同就会 500。
+    实现见 `zotero.mjs` 的 `saveGroup()`。
 
 Local API（读取文库，`library.mjs`）同样有坑，改前先读 `server_localAPI.js`：
 
@@ -210,10 +226,10 @@ index.js        Host 半边：zotero_sync + zotero_library 工具 + /zotero 指�
 client.js       Client 半边：回合卡片 + 输入框胶囊（只发 /zotero sync，挂载时零请求）
 zotero.mjs      Zotero Connector 协议客户端（纯 Node，可独立复用）
 library.mjs     Zotero Local API 只读客户端（搜索/详情/全文/附件路径/分类/标签）
-operations.mjs  文件发现 + 上传编排（source × scope 矩阵、去重）
+operations.mjs  文件发现 + 上传编排（source × scope 矩阵、去重、多文件合并）
 settings.mjs    配置层叠与持久化
 history.mjs     内容哈希上传记录
-test/           5 个离线套件 + 1 个显式开关的 live 套件
+test/           6 个离线套件 + 2 个显式开关的 live 套件
 ```
 
 ### 测试
@@ -221,12 +237,15 @@ test/           5 个离线套件 + 1 个显式开关的 live 套件
 ```bash
 node test/protocol.test.mjs     # 协议形状（桩 fetch，绝不连真 Zotero）
 node test/behaviour.test.mjs    # source×scope 矩阵、配置层叠、工具/指令行为
+node test/group.test.mjs        # 多文件合并成一个条目、部分变更、去重
 node test/package.test.mjs      # 包结构、locale 一致、"挂载零请求"防回归断言
 node test/deliverables.test.mjs # 会话产出账本 → candidates 全链路（离线）
 node test/library.test.mjs      # Local API 只读客户端（桩 /api/users/0）
 
 # 会向你的真实 Zotero 文库创建条目，默认跳过：
 ZTS_LIVE=1 node test/live-sync.test.mjs
+node test/live-group.test.mjs   # 真实上传 3 个文件，验证 1 条目 3 附件
+node test/verify-group.test.mjs # 按标题回查该条目，打印附件清单（用完记得删测试条目）
 ```
 
 ## License

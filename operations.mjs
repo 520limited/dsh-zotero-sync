@@ -202,13 +202,35 @@ export async function syncOne(options) {
 
 /**
  * Upload a batch sequentially: one connector session per file, ordered results.
- * @param options - { zot, candidates, target, tags, title, force, standalone,
+ *
+ * In group mode (`grouped: true`) the whole batch is uploaded as attachments of ONE parent
+ * item instead, so N files show up as a single literature entry with N attachments rather than
+ * N separate entries. Files are still deduplicated individually by content hash: a batch where
+ * nothing changed is skipped entirely, and a batch where only some files changed is retried
+ * without the unchanged ones.
+ *
+ * @param options - { zot, candidates, target, tags, title, force, standalone, grouped,
  *                   rememberTargetOnSuccess, onSetTarget }
  */
 export async function syncMany(options) {
-  const { zot, candidates = [], target, tags, title, force, standalone, onSetTarget, rememberTargetOnSuccess } = options;
-  if (!zot || typeof zot.saveFile !== 'function') throw new Error('syncMany needs a ZoteroConnector as "zot"');
+  const {
+    zot, candidates = [], target, tags, title, force, standalone, grouped = false,
+    onSetTarget, rememberTargetOnSuccess,
+  } = options;
+  if (!zot) throw new Error('syncMany needs a ZoteroConnector as "zot"');
   const chosen = target && /^[LC]\d+$/u.test(String(target)) ? String(target) : undefined;
+  const canGroup = grouped && candidates.length > 0 && typeof zot.saveGroup === 'function';
+  if (!canGroup && typeof zot.saveFile !== 'function') {
+    throw new Error('syncMany needs a ZoteroConnector as "zot"');
+  }
+
+  if (canGroup) {
+    return syncGrouped({
+      zot, candidates, target: chosen, tags, title, force, standalone,
+      onSetTarget, rememberTargetOnSuccess,
+    });
+  }
+
   const outcomes = [];
   for (const candidate of candidates) {
     const outcome = await syncOne({
@@ -227,6 +249,118 @@ export async function syncMany(options) {
       onSetTarget(outcome.target);
     }
   }
+  return outcomes;
+}
+
+/**
+ * Upload a batch into one parent item.
+ *
+ * All files that are new/changed share a single connector session and a single parent key, so
+ * Zotero creates one entry holding every file as an attachment. Unchanged files are skipped
+ * first and reported individually; if nothing changed, no session is opened at all.
+ */
+async function syncGrouped(options) {
+  const { zot, candidates, target, tags = [], title, force = false, standalone = false, onSetTarget, rememberTargetOnSuccess } = options;
+  const outcomes = [];
+  const pending = [];
+
+  for (const candidate of candidates) {
+    let bytes;
+    try {
+      bytes = new Uint8Array(readFileSync(candidate.path));
+    } catch (error) {
+      outcomes.push({
+        file: candidate.path,
+        name: candidate.name,
+        error: '读取文件失败：' + String((error && error.message) || error),
+      });
+      continue;
+    }
+    const hash = createHash('sha1').update(bytes).digest('hex');
+    const previous = loadHistory()[candidate.path];
+    if (!force && previous && previous.hash === hash) {
+      outcomes.push({
+        file: candidate.path,
+        name: candidate.name,
+        skipped: true,
+        reason: `内容未变化，已在 ${previous.target || 'Zotero'}（${previous.title || previous.attachment || candidate.name}）`,
+        title: previous.title,
+        target: previous.target,
+        attachment: previous.attachment,
+      });
+      continue;
+    }
+    pending.push({ candidate, bytes, hash });
+  }
+
+  if (!pending.length) return outcomes;
+
+  // A batch of exactly one changed file still becomes a group of one: the parent item is the
+  // entry and the file is its attachment, matching group-mode semantics for consistency.
+  const groupTitle =
+    (title && String(title).trim()) ||
+    stripExtension(candidates[0].name) ||
+    'DSH documents';
+  const now = Date.now().toString(36).slice(-5);
+  const sessionKey = 'dshgrp' + createHash('sha1')
+    .update(pending.map((p) => p.hash).join('|') + groupTitle)
+    .digest('hex')
+    .slice(0, 16) + '-' + now;
+
+  try {
+    const saved = await zot.saveGroup({
+      sessionKey,
+      title: groupTitle,
+      files: pending.map(({ candidate, bytes }) => ({
+        bytes,
+        name: candidate.name,
+        path: candidate.path,
+      })),
+      target,
+      tags,
+      standalone,
+      date: new Date(pending[0].candidate.mtimeMs || Date.now()).toISOString().slice(0, 10),
+    });
+
+    for (const { candidate, bytes, hash } of pending) {
+      recordUpload(candidate.path, {
+        hash,
+        size: bytes.length,
+        title: saved.title,
+        target: saved.target,
+        attachment: candidate.name,
+        groupKey: saved.itemKey,
+        groupTitle: saved.title,
+      });
+      outcomes.push({
+        file: candidate.path,
+        name: candidate.name,
+        title: saved.title,
+        target: saved.target,
+        attachment: candidate.name,
+        bytes: bytes.length,
+        grouped: true,
+        groupKey: saved.itemKey,
+      });
+    }
+
+    if (!target && rememberTargetOnSuccess && saved.target && /^([LC]\d+)$/u.test(saved.target) && onSetTarget) {
+      onSetTarget(saved.target);
+    }
+  } catch (error) {
+    for (const { candidate, bytes } of pending) {
+      outcomes.push({
+        file: candidate.path,
+        name: candidate.name,
+        error: describeError(error),
+        bytes: bytes.length,
+      });
+    }
+  }
+
+  // Keep the caller's original ordering so the summary reads in the order files were listed.
+  const order = new Map(candidates.map((c, i) => [c.path, i]));
+  outcomes.sort((a, b) => (order.get(a.file) ?? 0) - (order.get(b.file) ?? 0));
   return outcomes;
 }
 

@@ -380,6 +380,102 @@ export class ZoteroConnector {
 
     return { itemKey: sessionKey, title, target, attachmentName: name };
   }
+
+  /**
+   * Save several files as attachments of ONE parent item (one Zotero entry, one folder).
+   *
+   * Why this cannot be done by calling saveFile() N times: each saveFile() creates its own
+   * connector session *and* its own parent item, so N files become N entries with one
+   * attachment each. Zotero's /connector/saveAttachment resolves `parentItemID` inside the
+   * session (`session.getItemByConnectorKey(metadata.parentItemID)`), so reusing one session
+   * and one connector key is what makes all files land in the same entry.
+   *
+   * @param input - {
+   *   sessionKey: string        unique connector key, reused as the parent item's connector key
+   *   title: string             title of the single parent item
+   *   files: Array<{ bytes: Uint8Array, name: string, path?: string }>
+   *   target?: string           Zotero treeViewID ('L1' library, 'C23' collection)
+   *   tags?: string[]
+   *   itemType?: string
+   *   url?: string
+   *   date?: string
+   *   creators?: Array<{ creatorType?: string, name?: string }>
+   *   abstractNote?: string
+   *   libraryCatalog?: string
+   *   extra?: string
+   *   DOI?: string
+   * }
+   * @returns {Promise<{ itemKey: string, title: string, target: string, attachments: string[] }>}
+   */
+  async saveGroup(input) {
+    const sessionKey = String(input.sessionKey || '');
+    if (!sessionKey) throw new ZoteroError('BUG', 'saveGroup needs a sessionKey');
+    const files = Array.isArray(input.files) ? input.files : [];
+    if (!files.length) throw new ZoteroError('BUG', 'saveGroup needs at least one file');
+    const title = String(input.title || files[0].name || 'file');
+    const tags = Array.isArray(input.tags) ? input.tags.filter((t) => typeof t === 'string' && t.trim()) : [];
+    let target = input.target && /^[LC]\d+$/.test(String(input.target)) ? String(input.target) : undefined;
+
+    // updateSession reads `data.target[0]` unguarded, so every session needs a target.
+    if (!target) {
+      const info = await this.getTargets();
+      target = info.currentTarget;
+    }
+
+    // 1. the single parent item that will hold every file
+    const item = {
+      id: sessionKey,
+      itemType: input.itemType || 'document',
+      title,
+      url: input.url || fileUrl(files[0].path || files[0].name),
+      accessDate: 'CURRENT_TIMESTAMP',
+      date: input.date || new Date().toISOString().slice(0, 10),
+      creators: Array.isArray(input.creators) && input.creators.length
+        ? input.creators.map((c) => ({ creatorType: c.creatorType || 'author', name: c.name || 'Unknown' }))
+        : [],
+      tags: [],
+      libraryCatalog: input.libraryCatalog || 'DeepSeek Harness',
+      abstractNote: input.abstractNote || '',
+      extra: input.extra || '',
+    };
+    if (input.DOI) item.DOI = String(input.DOI);
+
+    await this.postJson(
+      '/connector/saveItems',
+      { sessionID: sessionKey, uri: item.url, items: [item] },
+    );
+
+    // 2. route the whole group to the collection and apply tags once
+    await this.postJson('/connector/updateSession', { sessionID: sessionKey, target, tags, note: '' });
+
+    // 3. every file becomes an attachment of that same parent connector key
+    const attachments = [];
+    for (const file of files) {
+      const bytes = bufferOf(file.bytes);
+      const name = String(file.name || 'file');
+      const response = await this.request('/connector/saveAttachment', {
+        body: bytes,
+        contentType: safeStreamContentType(contentTypeFor(name)),
+        search: { sessionID: sessionKey },
+        headers: {
+          'X-Metadata': encodeMetadataHeader({
+            sessionID: sessionKey,
+            parentItemID: sessionKey,
+            title: name,
+            url: fileUrl(file.path || name),
+          }),
+          'Content-Length': String(lenOf(bytes)),
+        },
+      });
+      this.#expectOk('/connector/saveAttachment', response);
+      attachments.push(name);
+    }
+
+    // 4. keep Zotero from syncing a half-finished write.
+    await this.postJson('/connector/delaySync', {});
+
+    return { itemKey: sessionKey, title, target, attachments };
+  }
 }
 
 /**

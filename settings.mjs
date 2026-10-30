@@ -43,6 +43,12 @@ export const DEFAULTS = {
   source: 'session',
   /** Overrides `scope` when set; a list of extensions starting with ".". */
   extensions: null,
+  /**
+   * 一次上传多个文件时，是否合并进同一个 Zotero 条目。
+   * true（默认）= 一次 sync 的多个文件建一个条目，各文件作为该条目的附件；
+   * false = 每个文件一个独立条目（旧行为）。
+   */
+  groupIntoOne: true,
   /** Zotero treeViewID; empty means "wherever Zotero is currently pointing". */
   target: '',
   /** Tags added to every uploaded item, merged with per-call tags. */
@@ -152,6 +158,7 @@ function sanitize(input) {
   if (Array.isArray(input.tags)) {
     out.tags = [...new Set(input.tags.filter((t) => typeof t === 'string' && t.trim()).map((t) => t.trim()))];
   }
+  if (typeof input.groupIntoOne === 'boolean') out.groupIntoOne = input.groupIntoOne;
   if (Number.isFinite(input.workspaceLimit)) out.workspaceLimit = clamp(input.workspaceLimit, 1, 200);
   if (Number.isFinite(input.workspaceDepth)) out.workspaceDepth = clamp(input.workspaceDepth, 1, 6);
   if (Number.isFinite(input.maxFileBytes)) out.maxFileBytes = clamp(input.maxFileBytes, 1024, 1024 ** 3);

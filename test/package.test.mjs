@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const pkg = 'D:\\PostGra\\DSH_workspace\\dsh-zotero-sync';
+const pkg = path.resolve(import.meta.dirname, '..');
 let fail = 0;
 const need = (cond, label, extra) => {
   console.log((cond ? '  OK   ' : '  FAIL ') + label + (cond ? '' : '  <- ' + (extra || '')));
