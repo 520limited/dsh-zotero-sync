@@ -1,6 +1,6 @@
 {
   "name": "dsh-zotero-sync",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "把对话中产出的 Markdown/文档一键同步到本机 Zotero 文库 / Sync conversation documents into your local Zotero library",
   "keywords": [
     "dsh",
@@ -39,6 +39,7 @@
     "settings.mjs",
     "operations.mjs",
     "history.mjs",
+    "title.mjs",
     "cordis.patch.yml",
     "locale/*.json",
     "icon.svg",

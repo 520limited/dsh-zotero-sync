@@ -38,9 +38,13 @@
 - ✅ 不碰 `zotero.sqlite`，不依赖 Zotero 重启
 - ⚠️ 唯一前提：Zotero 桌面端处于运行状态（6.x / 7.x / 8.x / 9.x / 10.x 的 Connector 协议一致，已在 Zotero 10.0.6 实测）
 
-每个文件创建为一个 `document` 条目（标题 = 文件名或你指定的标题，`libraryCatalog` 显示 `DeepSeek Harness`），原文件作为附件流式写入 Zotero storage，中文/emoji 文件名与标题无损往返。
+每个文件创建为一个 `document` 条目（**标题取文档自己声明的标题**：优先 YAML front matter 的 `title:`，其次正文第一个 Markdown 标题，再退回文件名去掉扩展名；`libraryCatalog` 显示 `DeepSeek Harness`），原文件作为附件流式写入 Zotero storage，中文/emoji 文件名与标题无损往返。
 
-**一次同步多个文件时，默认合并进同一个条目**（v1.2.0 起）：标题取第一个文件名或你用 `title` 指定的名字，其余文件都作为这个条目的附件，所以在 Zotero 里只多一个文献条目、不刷屏。想恢复"一个文件一个条目"用 `/zotero group off` 或 `configure` 传 `grouped: false`。
+**一次同步多个文件时，默认合并进同一个条目**（v1.2.0 起）：标题取这一批里**第一个真正要上传的文件**的文档标题（即批次首篇的正文标题，而不是文件名），其余文件都作为这个条目的附件，所以在 Zotero 里只多一个文献条目、不刷屏。想恢复"一个文件一个条目"用 `/zotero group off` 或 `configure` 传 `grouped: false`。
+
+> 为什么不再用文件名：像 `202611231336.md` 这种按时间戳命名的笔记，进 Zotero 后条目会叫 "202611231336"，读起来像路径碎片。现在条目名是文档里的真标题，例如「Reconstruct Anything Model: a lightweight general model for computational imaging」。想强制指定名字时传 `title` 即可，它始终优先于自动提取。
+>
+> 只有 Markdown / 纯文本会读取正文标题；PDF、DOCX 等二进制格式不猜内容，仍退回文件名（v1.3.0 起）。
 
 ## 四个入口，一个操作
 

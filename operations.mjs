@@ -18,6 +18,7 @@ import path from 'node:path';
 import { ZoteroError, contentTypeFor } from './zotero.mjs';
 import { DIR_NAMES_SKIP, SCOPES } from './settings.mjs';
 import { loadHistory, recordUpload } from './history.mjs';
+import { titleForDocument } from './title.mjs';
 
 /**
  * Build the list of files to act on.
@@ -174,7 +175,9 @@ export async function syncOne(options) {
     };
   }
 
-  const displayTitle = (title && String(title).trim()) || stripExtension(candidate.name);
+  // An explicit `title` still wins; otherwise name the entry after the document's own heading
+  // rather than after the file, so Zotero shows the note's real title.
+  const displayTitle = (title && String(title).trim()) || titleForDocument(candidate.path, candidate.name);
   const sessionKey = 'dsh' + hash.slice(0, 20) + '-' + Date.now().toString(36).slice(-5);
   try {
     const saved = await zot.saveFile({
@@ -297,9 +300,14 @@ async function syncGrouped(options) {
 
   // A batch of exactly one changed file still becomes a group of one: the parent item is the
   // entry and the file is its attachment, matching group-mode semantics for consistency.
+  //
+  // The entry is named after the *first file that actually gets uploaded* (pending[0]), not
+  // candidates[0]: when earlier files were skipped as unchanged, the entry is created from a
+  // later file and should carry that document's title.
+  const lead = pending[0].candidate;
   const groupTitle =
     (title && String(title).trim()) ||
-    stripExtension(candidates[0].name) ||
+    titleForDocument(lead.path, lead.name) ||
     'DSH documents';
   const now = Date.now().toString(36).slice(-5);
   const sessionKey = 'dshgrp' + createHash('sha1')
@@ -380,12 +388,6 @@ export function describeError(error) {
     return `[${error.code}] ${error.message}` + (hint ? '\n    建议：' + hint : '');
   }
   return String((error && error.message) || error);
-}
-
-function stripExtension(name) {
-  const text = String(name);
-  const at = text.lastIndexOf('.');
-  return at > 0 ? text.slice(0, at) : text;
 }
 
 /** Count helper shared with the callers' summaries. */

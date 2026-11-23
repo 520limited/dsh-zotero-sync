@@ -288,7 +288,7 @@ export function apply(ctx, config = {}) {
     scope.tools.register({
       name: 'zotero_sync',
       description:
-        "Upload documents produced in this conversation into the user's local Zotero desktop library. Zotero must be running; this talks to its built-in connector on 127.0.0.1:23119 (no API key, no Zotero add-on). Actions: \"status\" reports reachability and the current configuration; \"targets\" lists libraries and collections as ids like L1 or C23; \"candidates\" shows which files a source+scope pair would upload; \"sync\" uploads; \"configure\" changes defaults (source = session|workspace, scope = md|docs|all, target, tags, grouped, baseUrl). By default several files uploaded in one \"sync\" call land in ONE library entry, each file stored as an attachment of it (groupIntoOne); pass grouped=false to give every file its own entry instead. Scope \"md\" means Markdown only, \"docs\" adds PDF/Office/web/ebook, \"all\" takes any file but only for source=session. Uploads are deduplicated by content hash, so re-syncing an unchanged file reports it is already in Zotero instead of creating a duplicate item. Pass set_target or set_source/set_scope with configure to persist a choice. Failures carry a bracketed reason code. Nothing is written into the workspace.",
+        "Upload documents produced in this conversation into the user's local Zotero desktop library. Zotero must be running; this talks to its built-in connector on 127.0.0.1:23119 (no API key, no Zotero add-on). Actions: \"status\" reports reachability and the current configuration; \"targets\" lists libraries and collections as ids like L1 or C23; \"candidates\" shows which files a source+scope pair would upload; \"sync\" uploads; \"configure\" changes defaults (source = session|workspace, scope = md|docs|all, target, tags, grouped, baseUrl). By default several files uploaded in one \"sync\" call land in ONE library entry, each file stored as an attachment of it (groupIntoOne); pass grouped=false to give every file its own entry instead. An entry is titled after the title the document itself declares — its Markdown H1 or YAML front matter title — falling back to the file name without its extension; pass title to override. Scope \"md\" means Markdown only, \"docs\" adds PDF/Office/web/ebook, \"all\" takes any file but only for source=session. Uploads are deduplicated by content hash, so re-syncing an unchanged file reports it is already in Zotero instead of creating a duplicate item. Pass set_target or set_source/set_scope with configure to persist a choice. Failures carry a bracketed reason code. Nothing is written into the workspace.",
       parameters: {
         type: 'object',
         properties: {
@@ -328,7 +328,7 @@ export function apply(ctx, config = {}) {
           title: {
             type: 'string',
             description:
-              'Parent item title. In group mode this is the single entry\'s title; with one file it titles that entry. Defaults to the first file name without extension.',
+              'Explicit parent item title. Overrides the default naming, which reads the title the document itself declares (its Markdown heading or front matter) and falls back to the file name without extension.',
           },
           grouped: {
             type: 'boolean',

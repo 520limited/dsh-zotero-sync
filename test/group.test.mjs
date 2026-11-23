@@ -72,7 +72,8 @@ need(!grouped.some((o) => o.error), 'no errors in grouped result', JSON.stringif
 need(grouped.every((o) => o.grouped === true), 'every outcome is flagged grouped', JSON.stringify(grouped.map((o) => o.grouped)));
 need(new Set(grouped.map((o) => o.groupKey)).size === 1, 'all outcomes share one parent key', JSON.stringify(grouped.map((o) => o.groupKey)));
 need(new Set(grouped.map((o) => o.title)).size === 1, 'all outcomes share one entry title', JSON.stringify(grouped.map((o) => o.title)));
-need(grouped[0].title === '笔记', 'group title defaults to first file stem', grouped[0].title);
+// The entry is named after the document's own H1 (`# 甲`), not after the filename `笔记.md`.
+need(grouped[0].title === '甲', 'group title comes from the first document heading', grouped[0].title);
 need(grouped.length === 3, 'one outcome row per file', String(grouped.length));
 
 /* ── ordering is preserved ──────────────────────────────────────────────── */
