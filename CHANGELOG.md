@@ -5,6 +5,12 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [1.3.2] — 2026-11-24
+
+### Fixed
+- The test suites used `import.meta.dirname`, which only exists from Node 20.11, while `package.json` declares `node >= 18` — so `npm test` failed on Node 18 (caught by CI on the first run). The repository root is now derived from `import.meta.url`.
+- The published market index could silently ship an old version: `market/make-index.mjs` kept only the newest entry, which left it pinned to v1.1.1 while the repository was at v1.3.0. Published versions now live in `market/versions.json`, and `test/package.test.mjs` asserts the index matches it.
+
 ## [1.3.1] — 2026-11-24
 
 Packaging and documentation release. No behaviour change.

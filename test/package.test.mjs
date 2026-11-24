@@ -132,8 +132,22 @@ try {
     'index versions match versions.json',
     versions.join(',') + ' vs ' + registered.join(','),
   );
-  // The index silently shipped v1.1.1 for two releases because the newest entry was dropped.
-  need(versions.includes(manifest.version), 'index includes the current package version', versions.join(','));
+  // Released versions are exactly the dated CHANGELOG sections (`## [1.2.3] — 2026-01-01`);
+  // `## [Unreleased]` has no date and is not a release. Every released version must be
+  // installable through the index: it shipped v1.1.1 for two releases because the newest
+  // entry was dropped, and a version bumped without regenerating the index is the same bug.
+  let released = [];
+  try {
+    const changelog = readFileSync(path.join(pkg, 'CHANGELOG.md'), 'utf8');
+    released = [...changelog.matchAll(/^## \[(\d+\.\d+\.\d+)\]/gm)].map((m) => m[1]);
+  } catch { /* no changelog yet */ }
+  need(released.length > 0, 'CHANGELOG.md lists released versions', String(released.length));
+  const missing = released.filter((v) => !versions.includes(v));
+  need(
+    missing.length === 0,
+    'index includes every released version from CHANGELOG.md',
+    'missing: ' + missing.join(', ') + ' — run: node market/make-index.mjs <release commit sha>',
+  );
   for (const v of plugin.versions) {
     need(/^[0-9a-f]{40}$/u.test(v.source?.commit || ''), 'version ' + v.version + ' pins a 40-hex commit', String(v.source?.commit));
     need(Number.isInteger(v.publishTimestamp) && v.publishTimestamp > 0, 'version ' + v.version + ' has a publishTimestamp', String(v.publishTimestamp));
