@@ -73,6 +73,13 @@ for (const v of versions) {
   if (!Number.isInteger(v.publishTimestamp)) throw new Error(`version ${v.version} has no publishTimestamp`);
 }
 
+// versions.json is the registry the index is rendered from, so it has to be written back;
+// otherwise the two drift apart the moment a new version is added.
+if (!useAll) {
+  registry.versions = versions.map(({ version, commit, publishTimestamp }) => ({ version, commit, publishTimestamp }));
+  writeFileSync(versionsFile, JSON.stringify(registry, null, 2) + '\n', 'utf8');
+}
+
 // The icon lives next to the index and is referenced relatively; the validator resolves it
 // against the index URL, so raw.githubusercontent serves it with the right image type.
 writeFileSync(path.join(root, 'market', 'icon.svg'), iconSvg);

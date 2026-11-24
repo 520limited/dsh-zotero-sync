@@ -1,8 +1,0 @@
-test: stop relying on import.meta.dirname (Node 18 support)
-
-CI on the first push failed on Node 18 for both OSes: the suites use
-import.meta.dirname, which only exists from Node 20.11, while package.json
-declares node >= 18. Derive the repository root from import.meta.url instead.
-
-Also adds a market/versions.json consistency check to package.test.mjs so the
-published index cannot silently ship an old version again.

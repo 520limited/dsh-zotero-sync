@@ -143,6 +143,18 @@
           "engines": {
             "dsh": ">=0.2.0-0"
           }
+        },
+        {
+          "version": "1.3.2",
+          "publishTimestamp": 1795526913,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/520limited/dsh-zotero-sync",
+            "commit": "0ec3fc553578d4fe427fe7a4efff472a479e9ef6"
+          },
+          "engines": {
+            "dsh": ">=0.2.0-0"
+          }
         }
       ]
     }
