@@ -230,6 +230,20 @@ Known limits: Zotero must be running; Connector sessions expire after ~10 minute
 | [docs/development.md](docs/development.md) | Protocol pitfalls, code layout, how to run the tests |
 | [docs/media/README.md](docs/media/README.md) | How the README figures and GIF are produced |
 
+## Development
+
+```bash
+node test/protocol.test.mjs     # one suite; `npm test` runs all seven offline suites
+npm test
+
+# Creates real items in your Zotero library — skipped unless enabled:
+npm run test:live
+```
+
+CI runs the same offline suites on Node 18 / 20 / 22 × Ubuntu / Windows (`.github/workflows/ci.yml`). The live suites need a running Zotero and never run in CI.
+
+A tag is a release: `.github/workflows/release.yml` checks `package.json` against the tag, runs the offline suites, attaches the tagged source as a zip, and takes the release notes from that version's `CHANGELOG.md` section. It also publishes to npm when an `NPM_TOKEN` secret is configured.
+
 ## License
 
 MIT

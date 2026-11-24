@@ -230,6 +230,20 @@ Agent 侧同样受配置约束，不会越权上传你没见过的文件。
 | [docs/development.md](docs/development.md) | 协议踩坑记录、代码结构、测试怎么跑 |
 | [docs/media/README.md](docs/media/README.md) | README 图示与动图的录制说明 |
 
+## 开发
+
+```bash
+node test/protocol.test.mjs     # 全套离线测试：npm test 会依次跑完这七个
+npm test
+
+# 会向你的真实 Zotero 文库创建条目，默认跳过：
+npm run test:live
+```
+
+CI 在 Node 18 / 20 / 22 × Ubuntu / Windows 上跑同一组离线套件（见 `.github/workflows/ci.yml`）；live 套件需要一台正在运行 Zotero 的机器，永远不进 CI。
+
+打 tag 即发布：`.github/workflows/release.yml` 会校验 `package.json` 与 tag 一致、跑离线套件、把该 tag 的源码打成 zip 附到 Release、并从 `CHANGELOG.md` 提取对应版本段的发布说明。配了 `NPM_TOKEN` secret 时额外发布到 npm。
+
 ## License
 
 MIT
