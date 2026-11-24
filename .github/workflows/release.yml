@@ -15,6 +15,10 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # `secrets` is not an allowed context in a step-level `if`, so the token is lifted
+    # into job env and tested there. Empty when the secret is unset, which skips publishing.
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,20 +42,24 @@ jobs:
           echo "package.json: $PKG / tag: ${{ steps.v.outputs.version }}"
           test "$PKG" = "${{ steps.v.outputs.version }}"
 
+      # Runs whichever offline suites this tag actually contains, so retagging an
+      # older release does not fail on files that did not exist yet. Live suites
+      # need a running Zotero and are never run here.
       - name: Offline suites
         run: |
-          node test/protocol.test.mjs
-          node test/behaviour.test.mjs
-          node test/group.test.mjs
-          node test/title.test.mjs
-          node test/package.test.mjs
-          node test/deliverables.test.mjs
-          node test/library.test.mjs
+          shopt -s nullglob
+          for f in test/*.test.mjs; do
+            case "$f" in
+              *live*|*verify*) echo "skip $f"; continue ;;
+            esac
+            echo "== $f"
+            node "$f"
+          done
 
       - name: Pack the installable tree
         run: |
           mkdir -p dist
-          git archive --format=zip --prefix="dsh-zotero-sync-${GITHUB_REF_NAME}/" \
+          git archive --format=zip --prefix="dsh-zotero-sync-${{ steps.v.outputs.tag }}/" \
             -o "dist/dsh-zotero-sync-${{ steps.v.outputs.tag }}.zip" "${{ steps.v.outputs.tag }}"
 
       - name: Extract this version's changelog section
@@ -59,10 +67,13 @@ jobs:
           node -e '
             const fs = require("fs");
             const version = process.env.VERSION;
-            const text = fs.readFileSync("CHANGELOG.md", "utf8");
-            const lines = text.split(/\r?\n/);
+            if (!fs.existsSync("CHANGELOG.md")) {
+              fs.writeFileSync("notes.md", "");
+              process.exit(0);
+            }
+            const lines = fs.readFileSync("CHANGELOG.md", "utf8").split(/\r?\n/);
             const start = lines.findIndex((l) => l.startsWith("## [" + version + "]"));
-            if (start < 0) { fs.writeFileSync("notes.md", "See CHANGELOG.md."); process.exit(0); }
+            if (start < 0) { fs.writeFileSync("notes.md", ""); process.exit(0); }
             let end = lines.length;
             for (let i = start + 1; i < lines.length; i++) {
               if (lines[i].startsWith("## [")) { end = i; break; }
@@ -71,6 +82,25 @@ jobs:
           '
         env:
           VERSION: ${{ steps.v.outputs.version }}
+
+      # Tags cut before CHANGELOG.md existed get their notes from the commit range
+      # so no release is published empty.
+      - name: Fall back to commit log when there is no changelog section
+        run: |
+          if [ -s notes.md ]; then
+            echo "using CHANGELOG.md section"
+            exit 0
+          fi
+          PREV=$(git tag --sort=-v:refname | grep -v "^${{ steps.v.outputs.tag }}$" | head -n1 || true)
+          {
+            if [ -n "$PREV" ]; then
+              echo "Changes since $PREV:"
+              git log --no-merges --pretty='- %s' "$PREV..${{ steps.v.outputs.tag }}"
+            else
+              git log --no-merges --pretty='- %s' "${{ steps.v.outputs.tag }}"
+            fi
+          } > notes.md
+          cat notes.md
 
       - name: GitHub Release
         uses: softprops/action-gh-release@v2
@@ -82,13 +112,12 @@ jobs:
           draft: false
           prerelease: ${{ contains(steps.v.outputs.tag, '-') }}
 
-      # Optional: publishing to npm needs an NPM_TOKEN secret. Without it this step is skipped
-      # rather than failing the release.
+      # Optional: publishing to npm needs an NPM_TOKEN secret. Without it this
+      # step is skipped rather than failing the release.
       - name: Publish to npm
         if: ${{ env.NPM_TOKEN != '' }}
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-          npm publish --access public --provenance
+          npm publish --access public
