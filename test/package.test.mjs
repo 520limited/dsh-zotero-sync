@@ -112,5 +112,55 @@ for (const f of runtime.filter((x) => x.endsWith('.js') || x.endsWith('.mjs'))) 
   need(hits.length === 0, f + ' free of @deepseek-ai imports', hits.join(', '));
 }
 
+console.log('--- market index is consistent with package.json and versions.json');
+try {
+  const manifest = JSON.parse(readFileSync(path.join(pkg, 'package.json'), 'utf8'));
+  const index = JSON.parse(readFileSync(path.join(pkg, 'market', 'index.json'), 'utf8'));
+  const registry = JSON.parse(readFileSync(path.join(pkg, 'market', 'versions.json'), 'utf8'));
+  const plugin = index.plugins.find((p) => p.name === manifest.name);
+  need(index.format === 1, 'index format is 1', String(index.format));
+  need(Boolean(plugin), 'index lists ' + manifest.name, 'plugins: ' + index.plugins.map((p) => p.name).join(','));
+  const versions = plugin.versions.map((v) => v.version);
+  const registered = registry.versions.map((v) => v.version);
+  need(
+    versions.join(',') === registered.join(','),
+    'index versions match versions.json',
+    versions.join(',') + ' vs ' + registered.join(','),
+  );
+  // The index silently shipped v1.1.1 for two releases because the newest entry was dropped.
+  need(versions.includes(manifest.version), 'index includes the current package version', versions.join(','));
+  for (const v of plugin.versions) {
+    need(/^[0-9a-f]{40}$/u.test(v.source?.commit || ''), 'version ' + v.version + ' pins a 40-hex commit', String(v.source?.commit));
+    need(Number.isInteger(v.publishTimestamp) && v.publishTimestamp > 0, 'version ' + v.version + ' has a publishTimestamp', String(v.publishTimestamp));
+    need(v.source?.type === 'git' && v.source?.url === plugin.repository.url, 'version ' + v.version + ' uses the repo git URL', JSON.stringify(v.source));
+  }
+  need(
+    Boolean(index.metadata.categories[plugin.metadata.category]),
+    'plugin category is declared in metadata.categories',
+    plugin.metadata.category,
+  );
+  for (const label of plugin.metadata.labels) {
+    need(Boolean(index.metadata.labels[label]), 'label ' + label + ' is declared', '');
+  }
+  need(index.plugins.length === 1, 'index contains only this plugin (a personal index)', String(index.plugins.length));
+} catch (error) {
+  need(false, 'market/index.json is valid', String(error.message));
+}
+
+console.log('--- README files exist and cross-link');
+need(existsSync(path.join(pkg, 'README.md')), 'README.md exists', '');
+need(existsSync(path.join(pkg, 'README.en.md')), 'README.en.md exists', '');
+const readmeZh = readFileSync(path.join(pkg, 'README.md'), 'utf8');
+const readmeEn = readFileSync(path.join(pkg, 'README.en.md'), 'utf8');
+// The "English" link used to point at an anchor that the document never defined.
+need(/README\.en\.md/.test(readmeZh), 'README.md links to README.en.md', '');
+need(/README\.md/.test(readmeEn), 'README.en.md links back to README.md', '');
+for (const [name, text] of [['README.md', readmeZh], ['README.en.md', readmeEn]]) {
+  const broken = [...text.matchAll(/\]\((?!https?:|#|mailto:)([^)#]+)/g)]
+    .map((m) => m[1])
+    .filter((rel) => !existsSync(path.join(pkg, rel)));
+  need(broken.length === 0, name + ' relative links resolve', broken.join(', '));
+}
+
 console.log(fail === 0 ? '\nALL CHECKS PASSED' : `\n${fail} CHECK(S) FAILED`);
 process.exit(fail === 0 ? 0 : 1);

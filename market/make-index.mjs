@@ -1,15 +1,19 @@
 /**
  * Generate market/index.json (plugin market index format 1) for this repository.
  *
- * The git source of a version must be pinned to a 40-hex commit SHA, so run this AFTER the
- * release commit is pushed, passing that commit:
+ * Run it AFTER the release commit is pushed:
  *
- *   node market/make-index.mjs <commit-sha>
+ *   node market/make-index.mjs <40-hex commit sha>          # the version in package.json
+ *   node market/make-index.mjs --all                        # every version in market/versions.json
  *
- * It rewrites market/index.json with the new commit and current package metadata, then you
- * commit the index itself. The publishTimestamp stays at the package release time.
+ * Version 1 of this generator kept only the newest entry, which is how the published index
+ * ended up pinned to v1.1.1 for two releases. The list of published versions now lives in
+ * market/versions.json and this script only ever renders it, so an entry cannot be dropped by
+ * accident.
+ *
+ * A git source must be pinned to a 40-hex commit SHA: the validator refuses ranges and refs.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 
 const repo = 'https://github.com/520limited/dsh-zotero-sync';
@@ -19,10 +23,49 @@ const zh = JSON.parse(readFileSync(path.join(root, 'locale/zh.json'), 'utf8'));
 const en = JSON.parse(readFileSync(path.join(root, 'locale/en.json'), 'utf8'));
 const iconSvg = readFileSync(path.join(root, 'icon.svg'), 'utf8');
 
-const commit = process.argv[2];
-if (!/^[0-9a-f]{40}$/u.test(commit || '')) {
+const arg = process.argv[2];
+const useAll = arg === '--all';
+if (!useAll && !/^[0-9a-f]{40}$/u.test(arg || '')) {
   console.error('usage: node market/make-index.mjs <40-hex commit sha>');
+  console.error('       node market/make-index.mjs --all   (render every version in market/versions.json)');
   process.exit(1);
+}
+
+const versionsFile = path.join(root, 'market', 'versions.json');
+if (!existsSync(versionsFile)) {
+  console.error('missing market/versions.json — it is the source of truth for published versions');
+  process.exit(1);
+}
+const registry = JSON.parse(readFileSync(versionsFile, 'utf8'));
+
+// --all renders the registry as-is. A single SHA renders the registry plus (or refreshed with)
+// the version currently in package.json, so a release is one command.
+let versions = registry.versions.map((v) => ({ ...v }));
+if (!useAll) {
+  const current = { version: pkg.version, commit: arg, publishTimestamp: Math.floor(Date.now() / 1000) };
+  const existing = versions.find((v) => v.version === pkg.version);
+  if (existing) {
+    // Regenerating the same version keeps its original release timestamp unless the commit moved.
+    if (existing.commit !== arg) existing.publishTimestamp = current.publishTimestamp;
+    existing.commit = arg;
+  } else {
+    versions.push(current);
+  }
+}
+
+const cmp = (a, b) => {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d !== 0) return d;
+  }
+  return 0;
+};
+versions.sort((a, b) => cmp(a.version, b.version));
+for (const v of versions) {
+  if (!/^[0-9a-f]{40}$/u.test(v.commit)) throw new Error(`version ${v.version} has no 40-hex commit`);
+  if (!Number.isInteger(v.publishTimestamp)) throw new Error(`version ${v.version} has no publishTimestamp`);
 }
 
 // The icon lives next to the index and is referenced relatively; the validator resolves it
@@ -59,32 +102,16 @@ const index = {
         keywords: pkg.keywords,
         labels: ['zotero', 'literature-notes'],
       },
-      versions: [
-        {
-          version: pkg.version,
-          publishTimestamp: Math.floor(Date.now() / 1000),
-          source: { type: 'git', url: repo, commit },
-          engines: { dsh: (pkg.engines && pkg.engines.dsh) || '>=0.2.0-0' },
-        },
-      ],
+      versions: versions.map((v) => ({
+        version: v.version,
+        publishTimestamp: v.publishTimestamp,
+        source: { type: 'git', url: repo, commit: v.commit },
+        engines: { dsh: (pkg.engines && pkg.engines.dsh) || '>=0.2.0-0' },
+      })),
     },
   ],
 };
 
-const file = path.join(root, 'market', 'index.json');
-let existing = null;
-try {
-  existing = JSON.parse(readFileSync(file, 'utf8'));
-} catch { /* first generation */ }
-
-// Keep every previously published version so users can pin an older one, newest first.
-const previousVersions = existing?.plugins?.find((p) => p.name === pkg.name)?.versions ?? [];
-const kept = previousVersions.filter((v) => v.version !== pkg.version);
-const prevSame = previousVersions.find((v) => v.version === pkg.version);
-// Regenerating an already-published version keeps its original release timestamp.
-if (prevSame) index.plugins[0].versions[0].publishTimestamp = prevSame.publishTimestamp;
-index.plugins[0].versions = [...index.plugins[0].versions, ...kept];
-
-writeFileSync(file, JSON.stringify(index, null, 2) + '\n', 'utf8');
-console.log('market/index.json written for commit', commit.slice(0, 10), 'version', pkg.version);
+writeFileSync(path.join(root, 'market', 'index.json'), JSON.stringify(index, null, 2) + '\n', 'utf8');
+console.log('market/index.json written, version', pkg.version);
 console.log('versions listed:', index.plugins[0].versions.map((v) => v.version).join(', '));

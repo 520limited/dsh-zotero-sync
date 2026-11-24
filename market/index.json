@@ -40,8 +40,8 @@
         "zh": "Zotero 同步"
       },
       "description": {
-        "en": "Uploads the documents this conversation produced — Markdown notes, PDFs, Office files — into your local Zotero library, and reads your library back: search items, inspect metadata, extract PDF full text, resolve attachment paths, and export BibTeX/RIS. Talks to Zotero's built-in local server on 127.0.0.1:23119 — no API key and nothing to install inside Zotero. Upload rows sit beside each turn's deliverables plus a composer chip; the /zotero command and the zotero_sync / zotero_library tools cover everything. Unchanged files are skipped instead of duplicated.",
-        "zh": "把对话中产出的文档（Markdown 笔记、PDF、Office 文件）上传到本机 Zotero 文库，并可只读检索文库文献：搜索条目、读元数据、提取 PDF 全文、拿附件本地路径，还能导出 BibTeX/RIS。走 Zotero 自带的本地服务 127.0.0.1:23119，无需 API Key，也不用在 Zotero 里装任何东西。上传入口在每回合交付物旁与输入框快捷按钮，/zotero 指令与 zotero_sync / zotero_library 工具覆盖全部能力；内容未变化的文件自动跳过而不重复建条目。"
+        "en": "Files the documents your DSH conversations produce (Markdown notes, PDFs, Office files) into your local Zotero library: items are named after the document's own title, and several files from one sync merge into a single item with each file as an attachment. Reads your library back read-only too — search items, inspect metadata, extract PDF full text, resolve attachment paths, export BibTeX/RIS. Talks to Zotero's built-in local server on 127.0.0.1:23119, so there is no account, no API key and nothing to install inside Zotero. Entry points: each turn's deliverables card, a composer chip, the /zotero command, and the zotero_sync / zotero_library tools. Unchanged files are skipped instead of duplicated.",
+        "zh": "把 DSH 对话里产出的文档（Markdown 笔记、PDF、Office 文件）收进本机 Zotero 文库，条目名取文档自己的真标题，一次同步的多个文件合并成一个条目；也能只读检索文库：搜索条目、读元数据、提取 PDF 全文、拿附件本地路径、导出 BibTeX/RIS。直连 Zotero 自带的本地服务 127.0.0.1:23119，无需账号与 API Key，也不用在 Zotero 里装任何东西。入口在每回合交付物卡片、输入框胶囊、/zotero 指令与 zotero_sync / zotero_library 工具；内容未变化的文件自动跳过而不重复建条目。"
       },
       "icon": "./icon.svg",
       "author": "Ycx66",
@@ -56,9 +56,15 @@
           "dsh-plugin",
           "deepseek-harness",
           "zotero",
+          "zotero-api",
           "literature",
+          "literature-review",
+          "reference-manager",
           "markdown",
-          "notes"
+          "notes",
+          "notes-sync",
+          "pdf",
+          "bibtex"
         ],
         "labels": [
           "zotero",
@@ -67,12 +73,72 @@
       },
       "versions": [
         {
+          "version": "1.0.0",
+          "publishTimestamp": 1793164606,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/520limited/dsh-zotero-sync",
+            "commit": "7047a5b4d0a39543db8c5be5fb69033311ef6571"
+          },
+          "engines": {
+            "dsh": ">=0.2.0-0"
+          }
+        },
+        {
+          "version": "1.1.0",
+          "publishTimestamp": 1793170973,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/520limited/dsh-zotero-sync",
+            "commit": "c4ec52aaaee0f1cf17c8e8493c18b7ec11e4d534"
+          },
+          "engines": {
+            "dsh": ">=0.2.0-0"
+          }
+        },
+        {
           "version": "1.1.1",
           "publishTimestamp": 1793171551,
           "source": {
             "type": "git",
             "url": "https://github.com/520limited/dsh-zotero-sync",
             "commit": "1466c16095bbb987156d0c407a0d3dbc2368a28b"
+          },
+          "engines": {
+            "dsh": ">=0.2.0-0"
+          }
+        },
+        {
+          "version": "1.2.0",
+          "publishTimestamp": 1793353584,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/520limited/dsh-zotero-sync",
+            "commit": "4c5a6173f6364087f40637f4b388840cb79da00d"
+          },
+          "engines": {
+            "dsh": ">=0.2.0-0"
+          }
+        },
+        {
+          "version": "1.3.0",
+          "publishTimestamp": 1795413606,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/520limited/dsh-zotero-sync",
+            "commit": "9e4c3506b510275b77cb2d2b0180db72e8186c05"
+          },
+          "engines": {
+            "dsh": ">=0.2.0-0"
+          }
+        },
+        {
+          "version": "1.3.1",
+          "publishTimestamp": 1795526431,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/520limited/dsh-zotero-sync",
+            "commit": "84bc21abd512cc67a9820ddd3cb859d4753ca242"
           },
           "engines": {
             "dsh": ">=0.2.0-0"
