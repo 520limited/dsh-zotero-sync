@@ -1,3 +1,6 @@
 ﻿node_modules/
 *.tmp-*
 plugin-data/
+
+# agent scratch files / commit-message drafts
+__*

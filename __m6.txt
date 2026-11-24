@@ -1,5 +1,0 @@
-market: write the registry back so it cannot drift from the index
-
-make-index.mjs rendered the index from market/versions.json but never persisted
-the version it added, so the first release after the rewrite left the two files
-disagreeing (the new package.test.mjs assertion caught it).
