@@ -8,9 +8,14 @@
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 
-const pkg = path.resolve(import.meta.dirname, '..');
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+// Node 18 does not provide import.meta.dirname (added in Node 20.11), while package.json
+// declares node >= 18, so the repository root is derived from the module URL instead.
+const repoDir = path.dirname(fileURLToPath(import.meta.url));
+
+const pkg = path.resolve(repoDir, '..');
 const url = (f) => pathToFileURL(path.join(pkg, f)).href;
 
 const { syncMany, tally } = await import(url('operations.mjs'));

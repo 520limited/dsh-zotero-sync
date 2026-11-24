@@ -15,9 +15,14 @@
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Node 18 does not provide import.meta.dirname (added in Node 20.11), while package.json
+// declares node >= 18, so the repository root is derived from the module URL instead.
+const repoDir = path.dirname(fileURLToPath(import.meta.url));
 
 const repo = 'https://github.com/520limited/dsh-zotero-sync';
-const root = path.resolve(import.meta.dirname, '..');
+const root = path.resolve(repoDir, '..');
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
 const zh = JSON.parse(readFileSync(path.join(root, 'locale/zh.json'), 'utf8'));
 const en = JSON.parse(readFileSync(path.join(root, 'locale/en.json'), 'utf8'));

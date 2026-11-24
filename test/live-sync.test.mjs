@@ -13,7 +13,12 @@ import assert from 'node:assert/strict';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+// Node 18 does not provide import.meta.dirname (added in Node 20.11), while package.json
+// declares node >= 18, so the repository root is derived from the module URL instead.
+const repoDir = path.dirname(fileURLToPath(import.meta.url));
 
 if (process.env.ZTS_LIVE !== '1') {
   console.log('live-sync.test: SKIPPED (this test writes into your real Zotero library).');
@@ -21,7 +26,7 @@ if (process.env.ZTS_LIVE !== '1') {
   process.exit(0);
 }
 
-const root = pathToFileURL(path.join(import.meta.dirname, '..', 'index.js')).href;
+const root = pathToFileURL(path.join(repoDir, '..', 'index.js')).href;
 const listeners = new Map();
 const tools = new Map();
 const ctx = {
