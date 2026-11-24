@@ -1,0 +1,85 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 430" width="1200" height="430" role="img" aria-label="Grouping: by default several files from one sync become a single Zotero document entry with each file as an attachment; with grouping off each file becomes its own entry">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbfcfd"/>
+      <stop offset="1" stop-color="#f2f4f7"/>
+    </linearGradient>
+    <linearGradient id="on" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef6f1"/>
+      <stop offset="1" stop-color="#e2efe7"/>
+    </linearGradient>
+    <linearGradient id="off" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7f8fa"/>
+      <stop offset="1" stop-color="#eef0f3"/>
+    </linearGradient>
+    <style>
+      .t   { font-family: "Segoe UI","Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,sans-serif; }
+      .h   { font-size: 19px; font-weight: 650; fill: #1f2937; }
+      .s   { font-size: 13.5px; font-weight: 600; fill: #374151; }
+      .s2  { font-size: 12.5px; font-weight: 650; }
+      .b   { font-size: 12.5px; fill: #5b6672; }
+      .m   { font-family: "Cascadia Mono","SFMono-Regular",Consolas,monospace; font-size: 11.5px; fill: #43505d; }
+      .cap { font-size: 12px; fill: #8a949e; }
+      .tag { font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+    </style>
+    <marker id="grey2" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 1 L10 6 L0 11 z" fill="#9aa3ad"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="430" fill="url(#bg2)"/>
+  <text class="t h" x="48" y="44">一次同步，几个条目？</text>
+  <text class="t cap" x="48" y="66">默认合并：一次上传的多个文件 → Zotero 里只多一个文献条目，其余都是它的附件。</text>
+
+  <!-- source files -->
+  <text class="t s" x="48" y="106">本次产出的文件</text>
+  <g>
+    <rect x="48" y="120" width="196" height="34" rx="8" fill="#ffffff" stroke="#dfe3e8"/>
+    <text class="t m" x="62" y="142">笔记：Reconstruct Anything…</text>
+    <rect x="48" y="160" width="196" height="34" rx="8" fill="#ffffff" stroke="#dfe3e8"/>
+    <text class="t m" x="62" y="182">fig1.png</text>
+    <rect x="48" y="200" width="196" height="34" rx="8" fill="#ffffff" stroke="#dfe3e8"/>
+    <text class="t m" x="62" y="222">fig2.png</text>
+  </g>
+
+  <!-- arrows into the two outcomes -->
+  <line x1="252" y1="177" x2="284" y2="177" stroke="#9aa3ad" stroke-width="2"/>
+  <path d="M284 152 L284 202" stroke="#9aa3ad" stroke-width="2" fill="none"/>
+  <path d="M284 152 L344 152" stroke="#9aa3ad" stroke-width="2" fill="none" marker-end="url(#grey2)"/>
+  <path d="M284 202 L732 202" stroke="#9aa3ad" stroke-width="2" fill="none" marker-end="url(#grey2)"/>
+
+  <!-- ON -->
+  <rect x="352" y="96" width="360" height="176" rx="12" fill="url(#on)" stroke="#c9ddd1"/>
+  <text class="t s2" x="372" y="124" fill="#2f6b4a">groupIntoOne = true（默认）</text>
+  <rect x="372" y="136" width="320" height="52" rx="9" fill="#ffffff" stroke="#bcd8c8"/>
+  <text class="t m" x="386" y="157" style="font-size:11px">▣ 条目：Reconstruct Anything Model</text>
+  <text class="t m" x="386" y="176" style="font-size:11px">　　libraryCatalog = DeepSeek Harness</text>
+  <path d="M388 190 L388 206" stroke="#b8c2cc" stroke-width="1.4"/>
+  <path d="M452 190 L452 206" stroke="#b8c2cc" stroke-width="1.4"/>
+  <path d="M516 190 L516 206" stroke="#b8c2cc" stroke-width="1.4"/>
+  <path d="M388 206 L516 206" stroke="#b8c2cc" stroke-width="1.4" fill="none"/>
+  <rect x="372" y="210" width="72" height="30" rx="7" fill="#ffffff" stroke="#dfe3e8"/>
+  <text class="t m" x="380" y="229" style="font-size:10px">笔记.md</text>
+  <rect x="452" y="210" width="64" height="30" rx="7" fill="#ffffff" stroke="#dfe3e8"/>
+  <text class="t m" x="460" y="229" style="font-size:10px">fig1.png</text>
+  <rect x="524" y="210" width="64" height="30" rx="7" fill="#ffffff" stroke="#dfe3e8"/>
+  <text class="t m" x="532" y="229" style="font-size:10px">fig2.png</text>
+  <text class="t cap" x="600" y="229" style="font-size:10.5px">附件</text>
+  <text class="t b" x="372" y="260" fill="#2f6b4a" style="font-size:11.5px">文库只多 1 条，不刷屏</text>
+
+  <!-- OFF -->
+  <rect x="740" y="96" width="412" height="176" rx="12" fill="url(#off)" stroke="#d9dee4"/>
+  <text class="t s2" x="760" y="124" fill="#4b5563">groupIntoOne = false（v1.1 及更早）</text>
+  <rect x="760" y="136" width="372" height="34" rx="8" fill="#ffffff" stroke="#dfe3e8"/>
+  <text class="t m" x="774" y="157" style="font-size:11px">▣ 条目 1：笔记：Reconstruct Anything…</text>
+  <rect x="760" y="176" width="372" height="34" rx="8" fill="#ffffff" stroke="#dfe3e8"/>
+  <text class="t m" x="774" y="197" style="font-size:11px">▣ 条目 2：fig1</text>
+  <rect x="760" y="216" width="372" height="34" rx="8" fill="#ffffff" stroke="#dfe3e8"/>
+  <text class="t m" x="774" y="237" style="font-size:11px">▣ 条目 3：fig2</text>
+  <text class="t b" x="760" y="264" fill="#5b6672" style="font-size:11.5px">一个文件一个条目，附件与条目一一对应</text>
+
+  <!-- footer -->
+  <text class="t cap" x="48" y="316">切换方式：<tspan class="m">/zotero group off</tspan> 或 zotero_sync 的 configure 传 <tspan class="m">grouped: false</tspan>；改回默认用 <tspan class="m">/zotero group on</tspan>。</text>
+  <text class="t cap" x="48" y="342">条目名优先取文档自己声明的标题：YAML front matter 的 title: → 正文首个 Markdown 标题 → 文件名；显式传 title 时以传入值为准。</text>
+  <text class="t cap" x="48" y="368">PDF / DOCX 等二进制格式不猜内容，仍以文件名命名。</text>
+</svg>

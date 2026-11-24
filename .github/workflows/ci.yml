@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: offline suites (node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # No dependencies and no install step: every suite is plain node, and the live suites that
+      # need a running Zotero are opt-in (ZTS_LIVE) and deliberately not run here.
+      - name: protocol shape
+        run: node test/protocol.test.mjs
+
+      - name: behaviour matrix
+        run: node test/behaviour.test.mjs
+
+      - name: grouping
+        run: node test/group.test.mjs
+
+      - name: title extraction
+        run: node test/title.test.mjs
+
+      - name: package structure
+        run: node test/package.test.mjs
+
+      - name: deliverables ledger
+        run: node test/deliverables.test.mjs
+
+      - name: library client
+        run: node test/library.test.mjs

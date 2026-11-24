@@ -76,11 +76,15 @@ let existing = null;
 try {
   existing = JSON.parse(readFileSync(file, 'utf8'));
 } catch { /* first generation */ }
-// Keep the original release timestamp when regenerating for a newer commit.
-const prev = existing?.plugins?.find((p) => p.name === pkg.name)?.versions?.[0];
-if (prev && prev.version === pkg.version) {
-  index.plugins[0].versions[0].publishTimestamp = prev.publishTimestamp;
-}
+
+// Keep every previously published version so users can pin an older one, newest first.
+const previousVersions = existing?.plugins?.find((p) => p.name === pkg.name)?.versions ?? [];
+const kept = previousVersions.filter((v) => v.version !== pkg.version);
+const prevSame = previousVersions.find((v) => v.version === pkg.version);
+// Regenerating an already-published version keeps its original release timestamp.
+if (prevSame) index.plugins[0].versions[0].publishTimestamp = prevSame.publishTimestamp;
+index.plugins[0].versions = [...index.plugins[0].versions, ...kept];
 
 writeFileSync(file, JSON.stringify(index, null, 2) + '\n', 'utf8');
 console.log('market/index.json written for commit', commit.slice(0, 10), 'version', pkg.version);
+console.log('versions listed:', index.plugins[0].versions.map((v) => v.version).join(', '));

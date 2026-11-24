@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" role="img" aria-label="dsh-zotero-sync data flow: conversation deliverables are uploaded through Zotero's local Connector server into the Zotero library storage, and the library is read back read-only through the Zotero Local API">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbfcfd"/>
+      <stop offset="1" stop-color="#f2f4f7"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f7f8fa"/>
+    </linearGradient>
+    <linearGradient id="zot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fdf3f1"/>
+      <stop offset="1" stop-color="#fbe9e5"/>
+    </linearGradient>
+    <linearGradient id="ro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef6f1"/>
+      <stop offset="1" stop-color="#e3f0e8"/>
+    </linearGradient>
+    <marker id="warm" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 1 L10 6 L0 11 z" fill="#d4573f"/>
+    </marker>
+    <marker id="cool" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 1 L10 6 L0 11 z" fill="#3f7d5a"/>
+    </marker>
+    <marker id="grey" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 1 L10 6 L0 11 z" fill="#9aa3ad"/>
+    </marker>
+    <style>
+      .t  { font-family: "Segoe UI","Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,sans-serif; }
+      .h  { font-size: 19px; font-weight: 650; fill: #1f2937; }
+      .s  { font-size: 13.5px; font-weight: 600; fill: #374151; }
+      .b  { font-size: 12.5px; fill: #5b6672; }
+      .m  { font-family: "Cascadia Mono","SFMono-Regular",Consolas,monospace; font-size: 12px; fill: #43505d; }
+      .cap{ font-size: 12px; fill: #8a949e; }
+      .tag{ font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="560" fill="url(#bg)"/>
+
+  <!-- title -->
+  <text class="t h" x="48" y="46">dsh-zotero-sync · 数据流</text>
+  <text class="t cap" x="48" y="68">写入走 Zotero 自带的 Connector（127.0.0.1:23119）；读取走 Local API，严格只读。全程不碰 zotero.sqlite。</text>
+
+  <!-- ============ lane labels ============ -->
+  <text class="t tag" x="48" y="112" fill="#b4523c">WRITE · 上传</text>
+  <text class="t tag" x="48" y="424" fill="#3f7d5a">READ · 只读检索</text>
+
+  <!-- ============ column 1 : conversation ============ -->
+  <rect x="48" y="130" width="252" height="128" rx="12" fill="url(#card)" stroke="#dfe3e8"/>
+  <text class="t s" x="68" y="158">① DSH 对话产出</text>
+  <text class="t b" x="68" y="182">Markdown 笔记 · PDF · Office</text>
+  <text class="t b" x="68" y="202">会话账本记录本回合真正写出/</text>
+  <text class="t b" x="68" y="221">交付过的文件路径</text>
+  <rect x="68" y="232" width="76" height="16" rx="8" fill="#eef1f5"/>
+  <text class="t m" x="78" y="243" style="font-size:10.5px">.md  .pdf  .docx</text>
+
+  <!-- ============ column 2 : entries ============ -->
+  <rect x="356" y="130" width="252" height="128" rx="12" fill="url(#card)" stroke="#dfe3e8"/>
+  <text class="t s" x="376" y="158">② 四个入口</text>
+  <text class="t b" x="376" y="182">回合尾部卡片 · 输入框胶囊</text>
+  <text class="t b" x="376" y="202">/zotero 指令 · zotero_sync 工具</text>
+  <text class="t b" x="376" y="226" fill="#b4523c">同一份 Host 实现，行为一致</text>
+  <text class="t cap" x="376" y="245">你点下的那一刻才发请求，平时零连接</text>
+
+  <!-- ============ column 3 : connector ============ -->
+  <rect x="664" y="130" width="252" height="128" rx="12" fill="#ffffff" stroke="#e7c9c1"/>
+  <text class="t s" x="684" y="158">③ Zotero Connector</text>
+  <text class="t m" x="684" y="180">127.0.0.1:23119</text>
+  <text class="t b" x="684" y="202">Zotero 自带的本地服务，</text>
+  <text class="t b" x="684" y="221">浏览器 Zotero Connector 用的同一个</text>
+  <text class="t cap" x="684" y="245">无账号 · 无 API Key · 无需装 Zotero 插件</text>
+
+  <!-- ============ column 4 : library ============ -->
+  <rect x="972" y="130" width="180" height="128" rx="12" fill="url(#zot)" stroke="#eec9c0"/>
+  <text class="t s" x="992" y="158">④ Zotero 文库</text>
+  <text class="t b" x="992" y="182">1 个 document 条目</text>
+  <text class="t b" x="992" y="201">＋ N 个附件</text>
+  <text class="t b" x="992" y="226" fill="#8a5b4a">标题取文档真标题</text>
+  <text class="t cap" x="992" y="245">libraryCatalog = DeepSeek Harness</text>
+
+  <!-- write arrows -->
+  <line x1="300" y1="194" x2="348" y2="194" stroke="#d4573f" stroke-width="2.2" marker-end="url(#warm)"/>
+  <line x1="608" y1="194" x2="656" y2="194" stroke="#d4573f" stroke-width="2.2" marker-end="url(#warm)"/>
+  <line x1="916" y1="194" x2="964" y2="194" stroke="#d4573f" stroke-width="2.2" marker-end="url(#warm)"/>
+  <text class="t cap" x="890" y="120" text-anchor="middle" fill="#a9695a">流式写入</text>
+
+  <!-- storage detail under column 4 -->
+  <path d="M1062 258 L1062 292" stroke="#9aa3ad" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#grey)"/>
+  <rect x="888" y="298" width="264" height="66" rx="9" fill="#fff8f5" stroke="#f0d8cf"/>
+  <text class="t s" x="904" y="320" style="font-size:12.5px">附件实体落盘位置</text>
+  <text class="t m" x="904" y="340" style="font-size:11.5px">&lt;Zotero 数据目录&gt;\storage\&lt;KEY&gt;\</text>
+  <text class="t b" x="904" y="357" style="font-size:11.5px">标题与文件名无损往返，中文 / emoji 均可</text>
+
+  <!-- ============ READ lane ============ -->
+  <rect x="48" y="440" width="252" height="88" rx="12" fill="url(#card)" stroke="#dfe3e8"/>
+  <text class="t s" x="68" y="466">zotero_library 工具</text>
+  <text class="t b" x="68" y="488">search · item · fulltext</text>
+  <text class="t b" x="68" y="507">file · collections · tags</text>
+
+  <rect x="356" y="440" width="252" height="88" rx="12" fill="#ffffff" stroke="#c9ddd1"/>
+  <text class="t s" x="376" y="466">Zotero Local API</text>
+  <text class="t m" x="376" y="488">/api/users/0/…</text>
+  <text class="t b" x="376" y="507">需在 Zotero 设置里一次性开启</text>
+
+  <rect x="664" y="440" width="488" height="88" rx="12" fill="url(#ro)" stroke="#c9ddd1"/>
+  <text class="t s" x="684" y="466">只发送 GET，永不写入</text>
+  <text class="t b" x="684" y="488">元数据 · PDF 全文（Zotero 全文索引）· 附件本地绝对路径 · BibTeX / RIS / CSL JSON</text>
+  <text class="t b" x="684" y="507" fill="#3f7d5a">不申请写授权 key、不改动任何条目、不碰 zotero.sqlite</text>
+
+  <!-- read arrows (right to left: library -> api -> tool) -->
+  <line x1="656" y1="484" x2="610" y2="484" stroke="#3f7d5a" stroke-width="2.2" marker-end="url(#cool)"/>
+  <line x1="352" y1="484" x2="304" y2="484" stroke="#3f7d5a" stroke-width="2.2" marker-end="url(#cool)"/>
+
+  <!-- link lane from library down to API -->
+  <path d="M1062 298 L1062 420 L482 420 L482 436" stroke="#3f7d5a" stroke-width="1.8" fill="none" stroke-dasharray="5 4" marker-end="url(#cool)"/>
+
+  <!-- footer -->
+  <text class="t cap" x="48" y="548">前提：Zotero 桌面端正在运行。上传不需要开启 Local API；只有「读取文库」需要。</text>
+</svg>

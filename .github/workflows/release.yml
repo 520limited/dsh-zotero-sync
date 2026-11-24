@@ -1,0 +1,94 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to release (e.g. v1.3.1)
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Resolve version
+        id: v
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Version in package.json matches the tag
+        run: |
+          PKG=$(node -p "require('./package.json').version")
+          echo "package.json: $PKG / tag: ${{ steps.v.outputs.version }}"
+          test "$PKG" = "${{ steps.v.outputs.version }}"
+
+      - name: Offline suites
+        run: |
+          node test/protocol.test.mjs
+          node test/behaviour.test.mjs
+          node test/group.test.mjs
+          node test/title.test.mjs
+          node test/package.test.mjs
+          node test/deliverables.test.mjs
+          node test/library.test.mjs
+
+      - name: Pack the installable tree
+        run: |
+          mkdir -p dist
+          git archive --format=zip --prefix="dsh-zotero-sync-${GITHUB_REF_NAME}/" \
+            -o "dist/dsh-zotero-sync-${{ steps.v.outputs.tag }}.zip" "${{ steps.v.outputs.tag }}"
+
+      - name: Extract this version's changelog section
+        run: |
+          node -e '
+            const fs = require("fs");
+            const version = process.env.VERSION;
+            const text = fs.readFileSync("CHANGELOG.md", "utf8");
+            const lines = text.split(/\r?\n/);
+            const start = lines.findIndex((l) => l.startsWith("## [" + version + "]"));
+            if (start < 0) { fs.writeFileSync("notes.md", "See CHANGELOG.md."); process.exit(0); }
+            let end = lines.length;
+            for (let i = start + 1; i < lines.length; i++) {
+              if (lines[i].startsWith("## [")) { end = i; break; }
+            }
+            fs.writeFileSync("notes.md", lines.slice(start + 1, end).join("\n").trim() + "\n");
+          '
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.v.outputs.tag }}
+          name: ${{ steps.v.outputs.tag }}
+          body_path: notes.md
+          files: dist/*.zip
+          draft: false
+          prerelease: ${{ contains(steps.v.outputs.tag, '-') }}
+
+      # Optional: publishing to npm needs an NPM_TOKEN secret. Without it this step is skipped
+      # rather than failing the release.
+      - name: Publish to npm
+        if: ${{ env.NPM_TOKEN != '' }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+          npm publish --access public --provenance

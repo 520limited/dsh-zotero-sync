@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Zotero Sync",
-    "description": "Uploads the documents this conversation produced — Markdown notes, PDFs, Office files — into your local Zotero library, and reads your library back: search items, inspect metadata, extract PDF full text, resolve attachment paths, and export BibTeX/RIS. Talks to Zotero's built-in local server on 127.0.0.1:23119 — no API key and nothing to install inside Zotero. Upload rows sit beside each turn's deliverables plus a composer chip; the /zotero command and the zotero_sync / zotero_library tools cover everything. Unchanged files are skipped instead of duplicated."
+    "description": "Files the documents your DSH conversations produce (Markdown notes, PDFs, Office files) into your local Zotero library: items are named after the document's own title, and several files from one sync merge into a single item with each file as an attachment. Reads your library back read-only too — search items, inspect metadata, extract PDF full text, resolve attachment paths, export BibTeX/RIS. Talks to Zotero's built-in local server on 127.0.0.1:23119, so there is no account, no API key and nothing to install inside Zotero. Entry points: each turn's deliverables card, a composer chip, the /zotero command, and the zotero_sync / zotero_library tools. Unchanged files are skipped instead of duplicated."
   },
   "zotero": {
     "section": "Zotero",

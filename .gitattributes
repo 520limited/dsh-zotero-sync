@@ -1,0 +1,10 @@
+# Keep text files LF in the repository and in npm tarballs so that README rendering,
+# YAML parsing and diff output are identical on every platform.
+* text=auto eol=lf
+
+*.png binary
+*.gif binary
+*.ico binary
+*.jpg binary
+*.webp binary
+*.zip binary

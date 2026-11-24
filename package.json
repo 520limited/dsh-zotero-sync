@@ -1,15 +1,21 @@
 {
   "name": "dsh-zotero-sync",
-  "version": "1.3.0",
-  "description": "把对话中产出的 Markdown/文档一键同步到本机 Zotero 文库 / Sync conversation documents into your local Zotero library",
+  "version": "1.3.1",
+  "description": "把对话中产出的 Markdown/PDF/Office 文档同步进本机 Zotero 文库，并可只读检索文库、提取 PDF 全文 / Sync documents produced in DeepSeek Harness chats into a local Zotero library, and read the library back (search, metadata, PDF full text, BibTeX)",
   "keywords": [
     "dsh",
     "dsh-plugin",
     "deepseek-harness",
     "zotero",
+    "zotero-api",
     "literature",
+    "literature-review",
+    "reference-manager",
     "markdown",
-    "notes"
+    "notes",
+    "notes-sync",
+    "pdf",
+    "bibtex"
   ],
   "license": "MIT",
   "author": "Ycx66",
@@ -44,8 +50,15 @@
     "locale/*.json",
     "icon.svg",
     "README.md",
+    "README.en.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
+  "scripts": {
+    "test": "node test/protocol.test.mjs && node test/behaviour.test.mjs && node test/group.test.mjs && node test/title.test.mjs && node test/package.test.mjs && node test/deliverables.test.mjs && node test/library.test.mjs",
+    "test:live": "node test/live-sync.test.mjs && node test/live-group.test.mjs",
+    "market": "node market/make-index.mjs"
+  },
   "engines": {
     "node": ">=18",
     "dsh": ">=0.2.0-0"
